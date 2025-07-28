@@ -25,7 +25,7 @@ const BiometricLogin = ({ onLogin, onCancel }) => {
       const response = await axios.post("/api/auth/biometric/login", { username })
       const { publicKeyCredentialRequestOptions } = response.data
 
-      console.log("📋 Login options received")
+      console.log("📋 Login options received:", publicKeyCredentialRequestOptions)
       setStep("biometric")
 
       // Automatically start biometric authentication
@@ -41,7 +41,7 @@ const BiometricLogin = ({ onLogin, onCancel }) => {
   const performBiometricAuth = async (options) => {
     try {
       console.log("🚀 Starting biometric authentication...")
-      console.log("Options received:", options)
+      console.log("Original options:", options)
 
       // Convert challenge from base64 string to Uint8Array
       const challengeString = options.challenge
@@ -50,9 +50,15 @@ const BiometricLogin = ({ onLogin, onCancel }) => {
       }
 
       try {
-        options.challenge = Uint8Array.from(atob(challengeString), (c) => c.charCodeAt(0))
+        // Ensure proper base64 padding
+        const paddedChallenge = challengeString.padEnd(
+          challengeString.length + ((4 - (challengeString.length % 4)) % 4),
+          "=",
+        )
+        options.challenge = Uint8Array.from(atob(paddedChallenge), (c) => c.charCodeAt(0))
+        console.log("✅ Challenge converted successfully")
       } catch (e) {
-        console.error("Challenge conversion error:", e)
+        console.error("❌ Challenge conversion error:", e)
         throw new Error("Invalid challenge format received from server")
       }
 
@@ -60,16 +66,36 @@ const BiometricLogin = ({ onLogin, onCancel }) => {
       if (options.allowCredentials && options.allowCredentials.length > 0) {
         options.allowCredentials = options.allowCredentials.map((cred) => {
           try {
+            console.log("🔑 Converting credential ID:", cred.id)
+
+            // Handle different credential ID formats
+            let credentialIdBytes
+            if (typeof cred.id === "string") {
+              // Ensure proper base64 padding
+              const paddedCredId = cred.id.padEnd(cred.id.length + ((4 - (cred.id.length % 4)) % 4), "=")
+              credentialIdBytes = Uint8Array.from(atob(paddedCredId), (c) => c.charCodeAt(0))
+            } else if (Array.isArray(cred.id)) {
+              // If it's already an array, convert to Uint8Array
+              credentialIdBytes = new Uint8Array(cred.id)
+            } else {
+              throw new Error("Unknown credential ID format")
+            }
+
+            console.log("✅ Credential ID converted successfully")
             return {
               ...cred,
-              id: Uint8Array.from(atob(cred.id), (c) => c.charCodeAt(0)),
+              id: credentialIdBytes,
             }
           } catch (e) {
-            console.error("Credential ID conversion error:", e)
-            throw new Error("Invalid credential ID format")
+            console.error("❌ Credential ID conversion error:", e)
+            console.error("Credential ID value:", cred.id)
+            console.error("Credential ID type:", typeof cred.id)
+            throw new Error("Invalid credential ID format: " + e.message)
           }
         })
       }
+
+      console.log("🔐 Processed options:", options)
 
       // Get credential using WebAuthn
       const credential = await navigator.credentials.get({
@@ -77,6 +103,7 @@ const BiometricLogin = ({ onLogin, onCancel }) => {
       })
 
       console.log("✅ Biometric authentication successful")
+      console.log("Credential received:", credential)
 
       // Send credential to server for verification
       const verificationData = {
@@ -95,6 +122,7 @@ const BiometricLogin = ({ onLogin, onCancel }) => {
         },
       }
 
+      console.log("📤 Sending verification data to server...")
       const verifyResponse = await axios.post("/api/auth/biometric/login/verify", verificationData)
 
       console.log("🎉 Login verification successful")
@@ -108,8 +136,10 @@ const BiometricLogin = ({ onLogin, onCancel }) => {
         setError("Security error during biometric authentication")
       } else if (error.name === "NetworkError") {
         setError("Network error during authentication")
-      } else if (error.name === "InvalidCharacterError") {
-        setError("Invalid data format received from server. Please try again.")
+      } else if (error.name === "InvalidCharacterError" || error.message.includes("Invalid credential ID format")) {
+        setError("Invalid credential data. Please disable and re-enable biometric authentication.")
+      } else if (error.response?.status === 400) {
+        setError("Biometric authentication failed. Please try password login or re-setup biometric.")
       } else {
         setError(error.message || error.response?.data?.message || "Biometric authentication failed")
       }
@@ -153,7 +183,7 @@ const BiometricLogin = ({ onLogin, onCancel }) => {
               <li>Make sure your finger is clean and dry</li>
               <li>Position your finger correctly on the sensor</li>
               <li>Try using face recognition if available</li>
-              <li>Ensure device authentication is enabled</li>
+              <li>If error persists, disable and re-enable biometric in settings</li>
             </ul>
           </div>
         </div>
@@ -197,6 +227,16 @@ const BiometricLogin = ({ onLogin, onCancel }) => {
         <div className="biometric-info">
           <h4>🛡️ Secure & Fast</h4>
           <p>Biometric authentication provides enhanced security and faster access to your account.</p>
+
+          <div className="biometric-troubleshoot">
+            <h4>🔧 If biometric login fails:</h4>
+            <ol>
+              <li>Go to Biometric Settings</li>
+              <li>Disable biometric authentication</li>
+              <li>Re-enable it to refresh credentials</li>
+              <li>Try biometric login again</li>
+            </ol>
+          </div>
         </div>
       </div>
     </div>
