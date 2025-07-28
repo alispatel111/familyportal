@@ -29,7 +29,7 @@
   ],
   "functions": {
     "app/api/**/*.js": {
-      "runtime": "nodejs18.x"
+      "runtime": "vercel-nodejs@2.0.0"
     }
   }
 }
