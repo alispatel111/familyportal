@@ -107,13 +107,13 @@ const documentSchema = new mongoose.Schema({
 
 const Document = mongoose.model("Document", documentSchema)
 
-// CORS configuration - Updated for Vercel deployment
+// CORS configuration - Updated for your actual frontend URL
 const allowedOrigins = [
   "http://localhost:5173",
   "http://localhost:3000",
   process.env.FRONTEND_URL,
-  // Add your actual Vercel frontend domain here after deployment
-  "https://family-portal-frontend.vercel.app",
+  // Add your actual frontend URL here after deployment
+  "https://familyportal-frontend.vercel.app",
   // Allow any vercel.app subdomain for flexibility
 ].filter(Boolean)
 
@@ -420,7 +420,7 @@ app.post("/api/auth/biometric/register", requireAuth, async (req, res) => {
       challenge: challenge.toString("base64"),
       rp: {
         name: "Family Document Portal",
-        id: process.env.NODE_ENV === "production" ? "your-domain.vercel.app" : "localhost",
+        id: process.env.NODE_ENV === "production" ? "familyportal-backend.vercel.app" : "localhost",
       },
       user: {
         id: Buffer.from(user._id.toString()).toString("base64"),
@@ -774,7 +774,7 @@ app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`)
   console.log(`📱 Frontend URL: ${process.env.FRONTEND_URL || "http://localhost:5173"}`)
   console.log(
-    `🔗 Backend URL: ${process.env.NODE_ENV === "production" ? "https://your-backend.vercel.app" : `http://localhost:${PORT}`}`,
+    `🔗 Backend URL: ${process.env.NODE_ENV === "production" ? "https://familyportal-backend.vercel.app" : `http://localhost:${PORT}`}`,
   )
   console.log(`🔒 File storage: ${process.env.NODE_ENV === "production" ? "Database (MongoDB)" : "Local (Secure)"}`)
   console.log(`💾 Database: ${process.env.MONGODB_URI ? "MongoDB Atlas" : "Local MongoDB"}`)

@@ -14,9 +14,9 @@ const getApiBaseUrl = () => {
     return import.meta.env.VITE_API_URL
   }
 
-  // In production, use the backend Vercel URL
+  // In production, use your actual backend Vercel URL
   if (import.meta.env.PROD) {
-    return "https://family-portal-backend.vercel.app"
+    return "https://familyportal-backend.vercel.app"
   }
 
   // In development, use localhost
