@@ -716,7 +716,7 @@ body {
   }
 }
 
-/* Add these biometric styles at the end of the existing CSS */
+/* Enhanced Biometric Styles */
 
 /* Biometric Components */
 .biometric-setup {
@@ -914,6 +914,51 @@ body {
   font-size: 0.875rem;
 }
 
+/* Enhanced Biometric Status Display */
+.biometric-status {
+  background: #e6fffa;
+  border: 1px solid #81e6d9;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  margin: 1rem 0;
+}
+
+.biometric-status p {
+  margin: 0.25rem 0;
+  color: #234e52;
+  font-size: 0.875rem;
+}
+
+.biometric-status strong {
+  color: #065f46;
+}
+
+/* Troubleshooting Section */
+.troubleshoot-section {
+  background: #fef5e7;
+  border: 1px solid #f6ad55;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  margin-top: 1rem;
+}
+
+.troubleshoot-section p {
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  color: #744210;
+}
+
+.troubleshoot-section ul {
+  list-style: none;
+  padding: 0;
+}
+
+.troubleshoot-section li {
+  padding: 0.25rem 0;
+  color: #975a16;
+  font-size: 0.875rem;
+}
+
 /* Biometric Option in Login */
 .biometric-option {
   margin-top: 1.5rem;
@@ -948,6 +993,26 @@ body {
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
+}
+
+.biometric-note {
+  text-align: center;
+  margin-top: 0.5rem;
+  font-size: 0.75rem;
+  color: #4a5568;
+  line-height: 1.4;
+}
+
+.setup-hint {
+  text-align: center;
+  margin-top: 1rem;
+  padding: 0.75rem;
+  background: #f0fff4;
+  border: 1px solid #9ae6b4;
+  border-radius: 0.375rem;
+  font-size: 0.75rem;
+  color: #2f855a;
+  line-height: 1.4;
 }
 
 /* Biometric Settings Page */

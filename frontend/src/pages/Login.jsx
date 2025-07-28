@@ -15,6 +15,7 @@ const Login = ({ onLogin }) => {
   const [showBiometric, setShowBiometric] = useState(false)
   const [biometricSupported, setBiometricSupported] = useState(false)
   const [biometricAvailable, setBiometricAvailable] = useState(false)
+  const [biometricUsersCount, setBiometricUsersCount] = useState(0)
 
   // Check biometric support on component mount
   useEffect(() => {
@@ -23,29 +24,36 @@ const Login = ({ onLogin }) => {
 
   const checkBiometricSupport = async () => {
     try {
+      console.log("🔍 Checking biometric support...")
+
       // Check if WebAuthn is supported
       const supported = !!(navigator.credentials && navigator.credentials.create)
       setBiometricSupported(supported)
+      console.log("🔐 WebAuthn supported:", supported)
 
       if (supported && window.PublicKeyCredential) {
         // Check if platform authenticator is available
         const available = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()
         setBiometricAvailable(available)
+        console.log("👆 Platform authenticator available:", available)
 
         // Check if any users have biometric enabled
         if (available) {
           try {
             const response = await axios.get("/api/auth/biometric/check-availability")
-            console.log("🔍 Biometric availability:", response.data)
+            console.log("👥 Biometric availability check:", response.data)
+            setBiometricUsersCount(response.data.count || 0)
           } catch (error) {
-            console.log("ℹ️ No biometric users found or server error")
+            console.log("ℹ️ No biometric users found or server error:", error.response?.data?.message)
+            setBiometricUsersCount(0)
           }
         }
       }
     } catch (error) {
-      console.error("Error checking biometric support:", error)
+      console.error("❌ Error checking biometric support:", error)
       setBiometricSupported(false)
       setBiometricAvailable(false)
+      setBiometricUsersCount(0)
     }
   }
 
@@ -72,19 +80,23 @@ const Login = ({ onLogin }) => {
   }
 
   const handleBiometricLogin = (userData) => {
+    console.log("✅ Biometric login successful:", userData)
     onLogin(userData)
   }
 
   const handleBiometricCancel = () => {
+    console.log("❌ Biometric login cancelled")
     setShowBiometric(false)
     setError("")
   }
 
   const startBiometricLogin = () => {
+    console.log("🚀 Starting biometric login flow...")
     setError("")
     setShowBiometric(true)
   }
 
+  // Show biometric login component
   if (showBiometric) {
     return (
       <div className="auth-container">
@@ -94,6 +106,9 @@ const Login = ({ onLogin }) => {
       </div>
     )
   }
+
+  // Check if biometric login should be available
+  const showBiometricButton = biometricSupported && biometricAvailable && biometricUsersCount > 0
 
   return (
     <div className="auth-container">
@@ -137,7 +152,7 @@ const Login = ({ onLogin }) => {
             {loading ? "Signing in..." : "Sign In"}
           </button>
 
-          {biometricSupported && biometricAvailable && (
+          {showBiometricButton && (
             <div className="biometric-option">
               <div className="divider">
                 <span>OR</span>
@@ -146,7 +161,21 @@ const Login = ({ onLogin }) => {
                 👆 Login with Biometrics
               </button>
               <p className="biometric-note">
-                ✨ <strong>Quick Login:</strong> No username required - just use your fingerprint or face!
+                ✨ <strong>Instant Login:</strong> No username required - just use your fingerprint!
+                <br />👥{" "}
+                <strong>
+                  {biometricUsersCount} user{biometricUsersCount !== 1 ? "s" : ""}
+                </strong>{" "}
+                with biometric enabled
+              </p>
+            </div>
+          )}
+
+          {biometricSupported && biometricAvailable && biometricUsersCount === 0 && (
+            <div className="biometric-setup-hint">
+              <p className="setup-hint">
+                💡 <strong>Enable biometric login:</strong> Go to Settings → Biometric after login to setup instant
+                authentication!
               </p>
             </div>
           )}
