@@ -112,8 +112,7 @@ const allowedOrigins = [
   "http://localhost:5173",
   "http://localhost:3000",
   process.env.FRONTEND_URL,
-  // Add your actual frontend URL here after deployment
-  "https://familyportal-frontend.vercel.app",
+  "https://familyportal.vercel.app", // <-- Tumhara exact frontend URL yahan add kiya hai
   // Allow any vercel.app subdomain for flexibility
 ].filter(Boolean)
 
@@ -420,7 +419,7 @@ app.post("/api/auth/biometric/register", requireAuth, async (req, res) => {
       challenge: challenge.toString("base64"),
       rp: {
         name: "Family Document Portal",
-        id: process.env.NODE_ENV === "production" ? "familyportal-backend.vercel.app" : "localhost",
+        id: process.env.NODE_ENV === "production" ? "familyportal-backend.vercel.app" : "localhost", // <-- Backend domain yahan set kiya hai
       },
       user: {
         id: Buffer.from(user._id.toString()).toString("base64"),
