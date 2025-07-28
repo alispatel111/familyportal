@@ -11,27 +11,29 @@ require("dotenv").config()
 
 const app = express()
 
-// Create uploads directory if it doesn't exist
+// Create uploads directory if it doesn't exist (for local development only)
 const uploadsDir = path.join(__dirname, "uploads")
-if (!fs.existsSync(uploadsDir)) {
+if (process.env.NODE_ENV !== "production" && !fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true })
   console.log("✅ Created uploads directory")
 }
 
-// Multer storage configuration for local storage
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, "uploads/") // Files will be stored in uploads folder
-  },
-  filename: (req, file, cb) => {
-    // Generate unique filename: timestamp-originalname
-    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9)
-    const fileExtension = path.extname(file.originalname)
-    const fileName = file.fieldname + "-" + uniqueSuffix + fileExtension
-    console.log(`📁 Generated filename: ${fileName}`)
-    cb(null, fileName)
-  },
-})
+// Multer storage configuration - Use memory storage for Vercel
+const storage =
+  process.env.NODE_ENV === "production"
+    ? multer.memoryStorage() // Memory storage for Vercel
+    : multer.diskStorage({
+        destination: (req, file, cb) => {
+          cb(null, "uploads/")
+        },
+        filename: (req, file, cb) => {
+          const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9)
+          const fileExtension = path.extname(file.originalname)
+          const fileName = file.fieldname + "-" + uniqueSuffix + fileExtension
+          console.log(`📁 Generated filename: ${fileName}`)
+          cb(null, fileName)
+        },
+      })
 
 // File filter for allowed file types
 const fileFilter = (req, file, cb) => {
@@ -89,12 +91,13 @@ const userSchema = new mongoose.Schema({
 
 const User = mongoose.model("User", userSchema)
 
-// Document Schema
+// Document Schema - Modified for production
 const documentSchema = new mongoose.Schema({
-  filename: { type: String, required: true }, // Generated filename
-  originalName: { type: String, required: true }, // Original filename
-  fileUrl: { type: String, required: true }, // URL to access file
-  filePath: { type: String, required: true }, // Local file path
+  filename: { type: String, required: true },
+  originalName: { type: String, required: true },
+  fileUrl: { type: String, required: true },
+  filePath: { type: String }, // Optional for production
+  fileData: { type: Buffer }, // Store file data in database for production
   category: { type: String, required: true },
   uploadedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
   uploadDate: { type: Date, default: Date.now },
@@ -104,10 +107,26 @@ const documentSchema = new mongoose.Schema({
 
 const Document = mongoose.model("Document", documentSchema)
 
-// CORS configuration - MUST be before other middleware
+// CORS configuration - Updated for production
+const allowedOrigins = [
+  "http://localhost:5173",
+  "http://localhost:3000",
+  process.env.FRONTEND_URL,
+  "https://your-frontend-domain.vercel.app", // Replace with your actual frontend domain
+].filter(Boolean)
+
 app.use(
   cors({
-    origin: ["http://localhost:5173", "http://localhost:3000", process.env.FRONTEND_URL].filter(Boolean),
+    origin: (origin, callback) => {
+      // Allow requests with no origin (mobile apps, etc.)
+      if (!origin) return callback(null, true)
+
+      if (allowedOrigins.indexOf(origin) !== -1) {
+        callback(null, true)
+      } else {
+        callback(new Error("Not allowed by CORS"))
+      }
+    },
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "Cookie"],
@@ -117,10 +136,10 @@ app.use(
 // Handle preflight requests
 app.options("*", cors())
 
-app.use(express.json())
-app.use(express.urlencoded({ extended: true }))
+app.use(express.json({ limit: "50mb" }))
+app.use(express.urlencoded({ extended: true, limit: "50mb" }))
 
-// Session configuration
+// Session configuration - Updated for production
 app.use(
   session({
     secret: process.env.SESSION_SECRET || "your-secret-key-change-in-production",
@@ -134,6 +153,7 @@ app.use(
       secure: process.env.NODE_ENV === "production",
       httpOnly: true,
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
     },
   }),
 )
@@ -162,7 +182,7 @@ const requireAdmin = async (req, res, next) => {
   }
 }
 
-// 🔒 SECURE FILE ACCESS - Only authenticated users can access files
+// File serving middleware - Updated for production
 app.use("/uploads", requireAuth, async (req, res, next) => {
   try {
     const filename = path.basename(req.path)
@@ -189,16 +209,8 @@ app.use("/uploads", requireAuth, async (req, res, next) => {
 
     console.log(`✅ File access granted: ${filename}`)
 
-    // Set proper headers for file serving
-    const filePath = path.join(__dirname, "uploads", filename)
-
-    if (!fs.existsSync(filePath)) {
-      console.log(`❌ Physical file not found: ${filePath}`)
-      return res.status(404).json({ message: "Physical file not found" })
-    }
-
     // Set CORS headers
-    res.header("Access-Control-Allow-Origin", req.headers.origin || "http://localhost:5173")
+    res.header("Access-Control-Allow-Origin", req.headers.origin)
     res.header("Access-Control-Allow-Credentials", "true")
     res.header("Access-Control-Allow-Methods", "GET")
     res.header("Access-Control-Allow-Headers", "Content-Type, Authorization, Cookie")
@@ -209,8 +221,19 @@ app.use("/uploads", requireAuth, async (req, res, next) => {
       console.log(`⬇️ Download headers set for: ${document.originalName}`)
     }
 
-    // Serve the file
-    res.sendFile(filePath)
+    // For production, serve from database
+    if (process.env.NODE_ENV === "production" && document.fileData) {
+      res.setHeader("Content-Type", document.mimeType)
+      res.send(document.fileData)
+    } else {
+      // For development, serve from file system
+      const filePath = path.join(__dirname, "uploads", filename)
+      if (fs.existsSync(filePath)) {
+        res.sendFile(filePath)
+      } else {
+        res.status(404).json({ message: "Physical file not found" })
+      }
+    }
   } catch (error) {
     console.error("❌ Error in file access middleware:", error)
     res.status(500).json({ message: "Server error accessing file" })
@@ -223,31 +246,14 @@ app.get("/", (req, res) => {
     message: "🏠 Family Document Portal Backend is running!",
     status: "✅ OK",
     version: "1.0.0",
+    environment: process.env.NODE_ENV || "development",
     timestamp: new Date().toISOString(),
-    storage: "Local File System (Secure)",
+    storage: process.env.NODE_ENV === "production" ? "Database (MongoDB)" : "Local File System",
     security: {
       authentication: "Required for all file access",
       authorization: "Owner or Admin only",
       fileValidation: "Type and size limits enforced",
       sessionBased: "Secure session management",
-    },
-    endpoints: {
-      auth: [
-        "POST /api/auth/signup - Register new user",
-        "POST /api/auth/login - Login user",
-        "POST /api/auth/logout - Logout user",
-        "GET /api/auth/me - Get current user info",
-      ],
-      documents: [
-        "GET /api/documents - Get user documents",
-        "POST /api/documents - Upload document",
-        "DELETE /api/documents/:id - Delete document",
-      ],
-      files: ["GET /uploads/:filename - Access uploaded files (AUTH REQUIRED)"],
-      admin: [
-        "GET /api/admin/users - Get all users (admin only)",
-        "GET /api/admin/stats - Get system stats (admin only)",
-      ],
     },
   })
 })
@@ -257,18 +263,16 @@ app.get("/health", (req, res) => {
   res.json({
     status: "healthy",
     database: mongoose.connection.readyState === 1 ? "connected" : "disconnected",
-    storage: "local-secure",
-    uploadsDir: fs.existsSync(uploadsDir) ? "exists" : "missing",
+    storage: process.env.NODE_ENV === "production" ? "database" : "local-secure",
     timestamp: new Date().toISOString(),
   })
 })
 
-// Auth Routes
+// Auth Routes (same as before)
 app.post("/api/auth/signup", async (req, res) => {
   try {
     const { username, email, password, fullName, role } = req.body
 
-    // Validation
     if (!username || !email || !password || !fullName) {
       return res.status(400).json({ message: "All fields are required" })
     }
@@ -277,7 +281,6 @@ app.post("/api/auth/signup", async (req, res) => {
       return res.status(400).json({ message: "Password must be at least 6 characters" })
     }
 
-    // Check if user already exists
     const existingUser = await User.findOne({
       $or: [{ email }, { username }],
     })
@@ -286,10 +289,8 @@ app.post("/api/auth/signup", async (req, res) => {
       return res.status(400).json({ message: "User already exists with this email or username" })
     }
 
-    // Hash password
     const hashedPassword = await bcrypt.hash(password, 12)
 
-    // Create user
     const user = new User({
       username,
       email,
@@ -300,7 +301,6 @@ app.post("/api/auth/signup", async (req, res) => {
 
     await user.save()
 
-    // Create session
     req.session.userId = user._id
     req.session.userRole = user.role
 
@@ -330,7 +330,6 @@ app.post("/api/auth/login", async (req, res) => {
       return res.status(400).json({ message: "Username and password are required" })
     }
 
-    // Find user
     const user = await User.findOne({
       $or: [{ username }, { email: username }],
     })
@@ -339,13 +338,11 @@ app.post("/api/auth/login", async (req, res) => {
       return res.status(400).json({ message: "Invalid credentials" })
     }
 
-    // Check password
     const isMatch = await bcrypt.compare(password, user.password)
     if (!isMatch) {
       return res.status(400).json({ message: "Invalid credentials" })
     }
 
-    // Create session
     req.session.userId = user._id
     req.session.userRole = user.role
 
@@ -393,20 +390,14 @@ app.get("/api/auth/me", requireAuth, async (req, res) => {
   }
 })
 
-// Add this after the existing auth routes
-
-// Biometric Authentication Routes using WebAuthn
+// Biometric Authentication Routes
 const crypto = require("crypto")
-
-// Store for user credentials (in production, use database)
 const userCredentials = new Map()
 
-// Generate challenge for WebAuthn
 const generateChallenge = () => {
   return crypto.randomBytes(32)
 }
 
-// Register biometric credential
 app.post("/api/auth/biometric/register", requireAuth, async (req, res) => {
   try {
     const user = await User.findById(req.session.userId)
@@ -415,33 +406,31 @@ app.post("/api/auth/biometric/register", requireAuth, async (req, res) => {
     }
 
     const challenge = generateChallenge()
-
-    // Store challenge temporarily (in production, use Redis or database)
     req.session.challenge = challenge.toString("base64")
 
     const publicKeyCredentialCreationOptions = {
-      challenge: challenge.toString("base64"), // Convert to base64 string
+      challenge: challenge.toString("base64"),
       rp: {
         name: "Family Document Portal",
-        id: "localhost", // Change to your domain in production
+        id: process.env.NODE_ENV === "production" ? "your-domain.vercel.app" : "localhost",
       },
       user: {
-        id: Buffer.from(user._id.toString()).toString("base64"), // Convert to base64 string
+        id: Buffer.from(user._id.toString()).toString("base64"),
         name: user.email,
         displayName: user.fullName,
       },
       pubKeyCredParams: [
         {
-          alg: -7, // ES256
+          alg: -7,
           type: "public-key",
         },
         {
-          alg: -257, // RS256
+          alg: -257,
           type: "public-key",
         },
       ],
       authenticatorSelection: {
-        authenticatorAttachment: "platform", // For built-in biometrics
+        authenticatorAttachment: "platform",
         userVerification: "required",
       },
       timeout: 60000,
@@ -460,7 +449,6 @@ app.post("/api/auth/biometric/register", requireAuth, async (req, res) => {
   }
 })
 
-// Verify and store biometric credential
 app.post("/api/auth/biometric/register/verify", requireAuth, async (req, res) => {
   try {
     const { credential } = req.body
@@ -470,19 +458,15 @@ app.post("/api/auth/biometric/register/verify", requireAuth, async (req, res) =>
       return res.status(404).json({ message: "User not found" })
     }
 
-    // In production, properly verify the attestation
-    // For now, we'll store the credential
     const credentialId = credential.id
     const publicKey = credential.response.publicKey
 
-    // Store credential in database (simplified for demo)
     userCredentials.set(user._id.toString(), {
       credentialId,
       publicKey,
       counter: 0,
     })
 
-    // Update user to mark biometric as enabled
     await User.findByIdAndUpdate(user._id, {
       biometricEnabled: true,
       credentialId: credentialId,
@@ -500,7 +484,6 @@ app.post("/api/auth/biometric/register/verify", requireAuth, async (req, res) =>
   }
 })
 
-// Initiate biometric login
 app.post("/api/auth/biometric/login", async (req, res) => {
   try {
     const { username } = req.body
@@ -515,17 +498,16 @@ app.post("/api/auth/biometric/login", async (req, res) => {
 
     const challenge = generateChallenge()
 
-    // Store challenge temporarily
     req.session.challenge = challenge.toString("base64")
     req.session.pendingUserId = user._id.toString()
 
     const publicKeyCredentialRequestOptions = {
-      challenge: challenge.toString("base64"), // Convert to base64 string
+      challenge: challenge.toString("base64"),
       allowCredentials: [
         {
-          id: user.credentialId, // This should already be base64
+          id: user.credentialId,
           type: "public-key",
-          transports: ["internal"], // For platform authenticators
+          transports: ["internal"],
         },
       ],
       userVerification: "required",
@@ -544,7 +526,6 @@ app.post("/api/auth/biometric/login", async (req, res) => {
   }
 })
 
-// Verify biometric login
 app.post("/api/auth/biometric/login/verify", async (req, res) => {
   try {
     const { credential } = req.body
@@ -559,10 +540,6 @@ app.post("/api/auth/biometric/login/verify", async (req, res) => {
       return res.status(404).json({ message: "User not found" })
     }
 
-    // In production, properly verify the assertion
-    // For now, we'll assume verification passed
-
-    // Create session
     req.session.userId = user._id
     req.session.userRole = user.role
     req.session.pendingUserId = null
@@ -586,7 +563,6 @@ app.post("/api/auth/biometric/login/verify", async (req, res) => {
   }
 })
 
-// Check biometric availability
 app.get("/api/auth/biometric/status", requireAuth, async (req, res) => {
   try {
     const user = await User.findById(req.session.userId)
@@ -600,15 +576,12 @@ app.get("/api/auth/biometric/status", requireAuth, async (req, res) => {
   }
 })
 
-// Disable biometric authentication
 app.post("/api/auth/biometric/disable", requireAuth, async (req, res) => {
   try {
     const user = await User.findById(req.session.userId)
 
-    // Remove from memory store
     userCredentials.delete(user._id.toString())
 
-    // Update user in database
     await User.findByIdAndUpdate(user._id, {
       biometricEnabled: false,
       credentialId: null,
@@ -625,7 +598,7 @@ app.post("/api/auth/biometric/disable", requireAuth, async (req, res) => {
   }
 })
 
-// Document Routes
+// Document Routes - Updated for production
 app.post("/api/documents", requireAuth, upload.single("document"), async (req, res) => {
   try {
     console.log("=== DOCUMENT UPLOAD STARTED ===")
@@ -636,33 +609,29 @@ app.post("/api/documents", requireAuth, upload.single("document"), async (req, r
       return res.status(400).json({ message: "No file uploaded or file type not allowed." })
     }
 
-    console.log(" FILE UPLOADED TO LOCAL STORAGE")
-    console.log("📁 File details:", {
-      originalname: req.file.originalname,
-      filename: req.file.filename,
-      size: req.file.size,
-      mimetype: req.file.mimetype,
-    })
-
     const { category } = req.body
 
     if (!category) {
       console.error("❌ UPLOAD ERROR: Category missing")
-      fs.unlinkSync(req.file.path)
       return res.status(400).json({ message: "Category is required" })
     }
 
-    // Create file URL for accessing the file
-    const baseUrl = process.env.BASE_URL || `http://localhost:${process.env.PORT || 5000}`
-    const fileUrl = `${baseUrl}/uploads/${req.file.filename}`
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9)
+    const fileExtension = path.extname(req.file.originalname)
+    const filename = "document-" + uniqueSuffix + fileExtension
+
+    // Create file URL
+    const baseUrl = process.env.BASE_URL || `https://${req.get("host")}`
+    const fileUrl = `${baseUrl}/uploads/${filename}`
 
     console.log("🔗 Generated file URL:", fileUrl)
 
     const document = new Document({
-      filename: req.file.filename,
+      filename: filename,
       originalName: req.file.originalname,
       fileUrl: fileUrl,
-      filePath: req.file.path,
+      filePath: process.env.NODE_ENV === "production" ? null : req.file.path,
+      fileData: process.env.NODE_ENV === "production" ? req.file.buffer : null,
       category,
       uploadedBy: req.session.userId,
       fileSize: req.file.size,
@@ -681,16 +650,6 @@ app.post("/api/documents", requireAuth, upload.single("document"), async (req, r
     })
   } catch (error) {
     console.error("❌ SERVER ERROR DURING UPLOAD:", error)
-
-    if (req.file && req.file.path) {
-      try {
-        fs.unlinkSync(req.file.path)
-        console.log("🗑️ Cleaned up uploaded file after error")
-      } catch (cleanupError) {
-        console.error("❌ Error cleaning up file:", cleanupError)
-      }
-    }
-
     res.status(500).json({ message: "Server error during upload", error: error.message })
   }
 })
@@ -703,7 +662,6 @@ app.get("/api/documents", requireAuth, async (req, res) => {
     const { category } = req.query
     const query = {}
 
-    // If not admin, only show user's own documents
     if (req.session.userRole !== "admin") {
       query.uploadedBy = req.session.userId
     }
@@ -731,19 +689,20 @@ app.delete("/api/documents/:id", requireAuth, async (req, res) => {
       return res.status(404).json({ message: "Document not found" })
     }
 
-    // Check if user owns the document or is admin
     if (document.uploadedBy.toString() !== req.session.userId && req.session.userRole !== "admin") {
       return res.status(403).json({ message: "Access denied" })
     }
 
-    // Delete file from local storage
-    try {
-      if (fs.existsSync(document.filePath)) {
-        fs.unlinkSync(document.filePath)
-        console.log("🗑️ File deleted from local storage")
+    // Delete file from local storage (development only)
+    if (process.env.NODE_ENV !== "production" && document.filePath) {
+      try {
+        if (fs.existsSync(document.filePath)) {
+          fs.unlinkSync(document.filePath)
+          console.log("🗑️ File deleted from local storage")
+        }
+      } catch (fileError) {
+        console.error("❌ Error deleting file from storage:", fileError)
       }
-    } catch (fileError) {
-      console.error("❌ Error deleting file from storage:", fileError)
     }
 
     await Document.findByIdAndDelete(req.params.id)
@@ -806,7 +765,12 @@ const PORT = process.env.PORT || 5000
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`)
   console.log(`📱 Frontend URL: ${process.env.FRONTEND_URL || "http://localhost:5173"}`)
-  console.log(`🔗 Backend URL: http://localhost:${PORT}`)
-  console.log(`🔒 File storage: Local (Secure - Auth Required)`)
+  console.log(
+    `🔗 Backend URL: ${process.env.NODE_ENV === "production" ? "https://your-backend.vercel.app" : `http://localhost:${PORT}`}`,
+  )
+  console.log(`🔒 File storage: ${process.env.NODE_ENV === "production" ? "Database (MongoDB)" : "Local (Secure)"}`)
   console.log(`💾 Database: ${process.env.MONGODB_URI ? "MongoDB Atlas" : "Local MongoDB"}`)
 })
+
+// Export for Vercel
+module.exports = app
