@@ -456,6 +456,66 @@ const generateChallenge = () => {
   return crypto.randomBytes(32)
 }
 
+// Check if any users have biometric enabled (for login page)
+app.get("/api/auth/biometric/check-availability", async (req, res) => {
+  try {
+    const biometricUsers = await User.countDocuments({ biometricEnabled: true })
+    res.json({
+      available: biometricUsers > 0,
+      count: biometricUsers,
+    })
+  } catch (error) {
+    console.error("Biometric availability check error:", error)
+    res.status(500).json({ message: "Server error checking biometric availability" })
+  }
+})
+
+// IMMEDIATE BIOMETRIC LOGIN - No username required
+app.post("/api/auth/biometric/login/immediate", async (req, res) => {
+  try {
+    console.log("🔐 Immediate biometric login request")
+
+    // Get all users with biometric enabled
+    const biometricUsers = await User.find({ biometricEnabled: true }).select("credentialId fullName username")
+
+    if (biometricUsers.length === 0) {
+      console.log("❌ No biometric users found")
+      return res.status(400).json({ message: "No biometric authentication available" })
+    }
+
+    console.log(`✅ Found ${biometricUsers.length} biometric users`)
+
+    const challenge = generateChallenge()
+    req.session.challenge = challenge.toString("base64")
+
+    // Create allowCredentials array with all registered biometric credentials
+    const allowCredentials = biometricUsers.map((user) => ({
+      id: user.credentialId, // Send as base64 string
+      type: "public-key",
+      transports: ["internal"],
+    }))
+
+    const publicKeyCredentialRequestOptions = {
+      challenge: challenge.toString("base64"),
+      allowCredentials: allowCredentials,
+      userVerification: "required",
+      timeout: 60000,
+    }
+
+    console.log(`✅ Immediate biometric options generated for ${biometricUsers.length} users`)
+    console.log("📋 Options:", publicKeyCredentialRequestOptions)
+
+    res.json({
+      publicKeyCredentialRequestOptions,
+      message: "Immediate biometric login options generated",
+      userCount: biometricUsers.length,
+    })
+  } catch (error) {
+    console.error("❌ Immediate biometric login error:", error)
+    res.status(500).json({ message: "Server error during immediate biometric login" })
+  }
+})
+
 app.post("/api/auth/biometric/register", requireAuth, async (req, res) => {
   try {
     console.log("🔐 Biometric registration request from user:", req.session.userId)
@@ -543,11 +603,12 @@ app.post("/api/auth/biometric/register/verify", requireAuth, async (req, res) =>
   }
 })
 
+// LEGACY BIOMETRIC LOGIN (with username) - Keep for backward compatibility
 app.post("/api/auth/biometric/login", async (req, res) => {
   try {
     const { username } = req.body
 
-    console.log("🔐 Biometric login request for username:", username)
+    console.log("🔐 Legacy biometric login request for username:", username)
 
     const user = await User.findOne({
       $or: [{ username }, { email: username }],
@@ -579,7 +640,7 @@ app.post("/api/auth/biometric/login", async (req, res) => {
       timeout: 60000,
     }
 
-    console.log(`✅ Biometric login options generated for user: ${user.username}`)
+    console.log(`✅ Legacy biometric login options generated for user: ${user.username}`)
     console.log("📋 Options:", publicKeyCredentialRequestOptions)
 
     res.json({
@@ -587,7 +648,7 @@ app.post("/api/auth/biometric/login", async (req, res) => {
       message: "Biometric login options generated",
     })
   } catch (error) {
-    console.error("❌ Biometric login error:", error)
+    console.error("❌ Legacy biometric login error:", error)
     res.status(500).json({ message: "Server error during biometric login" })
   }
 })
@@ -595,22 +656,24 @@ app.post("/api/auth/biometric/login", async (req, res) => {
 app.post("/api/auth/biometric/login/verify", async (req, res) => {
   try {
     const { credential } = req.body
-    const pendingUserId = req.session.pendingUserId
 
-    console.log("🔐 Biometric login verification for user:", pendingUserId)
+    console.log("🔐 Biometric login verification")
+    console.log("📋 Credential ID received:", credential.id)
 
-    if (!pendingUserId) {
-      return res.status(400).json({ message: "No pending biometric login" })
-    }
+    // Find user by credential ID (for immediate login)
+    const credentialIdBase64 = Buffer.from(credential.rawId).toString("base64")
+    console.log("🔍 Looking for user with credential ID:", credentialIdBase64)
 
-    const user = await User.findById(pendingUserId)
+    const user = await User.findOne({ credentialId: credentialIdBase64 })
+
     if (!user) {
-      return res.status(404).json({ message: "User not found" })
+      console.log("❌ No user found with this credential ID")
+      return res.status(400).json({ message: "Invalid biometric credential" })
     }
 
-    // Simple verification - in production, you'd want proper WebAuthn verification
-    console.log("✅ Biometric credential received, proceeding with login")
+    console.log(`✅ User identified: ${user.username}`)
 
+    // Create session for the identified user
     req.session.userId = user._id
     req.session.userRole = user.role
     req.session.pendingUserId = null
@@ -841,6 +904,8 @@ app.use("*", (req, res) => {
     availableRoutes: {
       auth: ["POST /api/auth/signup", "POST /api/auth/login", "POST /api/auth/logout", "GET /api/auth/me"],
       biometric: [
+        "GET /api/auth/biometric/check-availability",
+        "POST /api/auth/biometric/login/immediate",
         "POST /api/auth/biometric/register",
         "POST /api/auth/biometric/register/verify",
         "POST /api/auth/biometric/login",
@@ -869,6 +934,7 @@ app.listen(PORT, () => {
   console.log(`💾 Database: ${process.env.MONGODB_URI ? "MongoDB Atlas" : "Local MongoDB"}`)
   console.log(`🔐 Session store: MongoDB`)
   console.log(`🛡️ CORS enabled for Vercel domains`)
+  console.log(`👆 Immediate biometric login enabled!`)
   console.log(`📊 All routes initialized successfully!`)
 })
 

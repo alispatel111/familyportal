@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Link } from "react-router-dom"
 import axios from "axios"
 import BiometricLogin from "../components/BiometricLogin"
@@ -14,15 +14,40 @@ const Login = ({ onLogin }) => {
   const [loading, setLoading] = useState(false)
   const [showBiometric, setShowBiometric] = useState(false)
   const [biometricSupported, setBiometricSupported] = useState(false)
+  const [biometricAvailable, setBiometricAvailable] = useState(false)
 
   // Check biometric support on component mount
-  useState(() => {
-    const checkBiometricSupport = () => {
-      const supported = !!(navigator.credentials && navigator.credentials.create)
-      setBiometricSupported(supported)
-    }
+  useEffect(() => {
     checkBiometricSupport()
   }, [])
+
+  const checkBiometricSupport = async () => {
+    try {
+      // Check if WebAuthn is supported
+      const supported = !!(navigator.credentials && navigator.credentials.create)
+      setBiometricSupported(supported)
+
+      if (supported && window.PublicKeyCredential) {
+        // Check if platform authenticator is available
+        const available = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()
+        setBiometricAvailable(available)
+
+        // Check if any users have biometric enabled
+        if (available) {
+          try {
+            const response = await axios.get("/api/auth/biometric/check-availability")
+            console.log("🔍 Biometric availability:", response.data)
+          } catch (error) {
+            console.log("ℹ️ No biometric users found or server error")
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error checking biometric support:", error)
+      setBiometricSupported(false)
+      setBiometricAvailable(false)
+    }
+  }
 
   const handleChange = (e) => {
     setFormData({
@@ -53,6 +78,11 @@ const Login = ({ onLogin }) => {
   const handleBiometricCancel = () => {
     setShowBiometric(false)
     setError("")
+  }
+
+  const startBiometricLogin = () => {
+    setError("")
+    setShowBiometric(true)
   }
 
   if (showBiometric) {
@@ -107,14 +137,17 @@ const Login = ({ onLogin }) => {
             {loading ? "Signing in..." : "Sign In"}
           </button>
 
-          {biometricSupported && (
+          {biometricSupported && biometricAvailable && (
             <div className="biometric-option">
               <div className="divider">
                 <span>OR</span>
               </div>
-              <button type="button" onClick={() => setShowBiometric(true)} className="btn btn-outline biometric-btn">
-                🔐 Login with Biometrics
+              <button type="button" onClick={startBiometricLogin} className="btn btn-outline biometric-btn">
+                👆 Login with Biometrics
               </button>
+              <p className="biometric-note">
+                ✨ <strong>Quick Login:</strong> No username required - just use your fingerprint or face!
+              </p>
             </div>
           )}
         </form>

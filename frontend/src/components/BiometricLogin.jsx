@@ -1,38 +1,36 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import axios from "axios"
 
 const BiometricLogin = ({ onLogin, onCancel }) => {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
-  const [username, setUsername] = useState("")
-  const [step, setStep] = useState("username") // 'username' or 'biometric'
+  const [step, setStep] = useState("biometric") // Start directly with biometric
 
-  const handleUsernameSubmit = async (e) => {
-    e.preventDefault()
-    if (!username.trim()) {
-      setError("Please enter your username or email")
-      return
-    }
+  useEffect(() => {
+    // Automatically start biometric authentication when component mounts
+    startBiometricAuth()
+  }, [])
 
+  const startBiometricAuth = async () => {
     setLoading(true)
     setError("")
 
     try {
-      console.log("🔐 Initiating biometric login for:", username)
+      console.log("🔐 Starting immediate biometric authentication...")
 
-      const response = await axios.post("/api/auth/biometric/login", { username })
+      // Get biometric options for all registered users
+      const response = await axios.post("/api/auth/biometric/login/immediate")
       const { publicKeyCredentialRequestOptions } = response.data
 
-      console.log("📋 Login options received:", publicKeyCredentialRequestOptions)
-      setStep("biometric")
+      console.log("📋 Immediate biometric options received:", publicKeyCredentialRequestOptions)
 
-      // Automatically start biometric authentication
+      // Immediately start biometric authentication
       await performBiometricAuth(publicKeyCredentialRequestOptions)
     } catch (error) {
-      console.error("❌ Biometric login initiation failed:", error)
-      setError(error.response?.data?.message || "Failed to initiate biometric login")
+      console.error("❌ Immediate biometric login failed:", error)
+      setError(error.response?.data?.message || "Biometric authentication not available")
     } finally {
       setLoading(false)
     }
@@ -40,8 +38,8 @@ const BiometricLogin = ({ onLogin, onCancel }) => {
 
   const performBiometricAuth = async (options) => {
     try {
-      console.log("🚀 Starting biometric authentication...")
-      console.log("Original options:", options)
+      console.log("🚀 Performing biometric authentication...")
+      console.log("Options received:", options)
 
       // Convert challenge from base64 string to Uint8Array
       const challengeString = options.challenge
@@ -105,7 +103,7 @@ const BiometricLogin = ({ onLogin, onCancel }) => {
       console.log("✅ Biometric authentication successful")
       console.log("Credential received:", credential)
 
-      // Send credential to server for verification
+      // Send credential to server for verification and user identification
       const verificationData = {
         credential: {
           id: credential.id,
@@ -137,106 +135,74 @@ const BiometricLogin = ({ onLogin, onCancel }) => {
       } else if (error.name === "NetworkError") {
         setError("Network error during authentication")
       } else if (error.name === "InvalidCharacterError" || error.message.includes("Invalid credential ID format")) {
-        setError("Invalid credential data. Please disable and re-enable biometric authentication.")
+        setError("Invalid credential data. Please try again or use password login.")
       } else if (error.response?.status === 400) {
-        setError("Biometric authentication failed. Please try password login or re-setup biometric.")
+        setError("No registered biometric found. Please setup biometric authentication first.")
       } else {
         setError(error.message || error.response?.data?.message || "Biometric authentication failed")
       }
-
-      setStep("username") // Go back to username step
     }
   }
 
   const retryBiometric = () => {
     setError("")
-    setStep("username")
-  }
-
-  if (step === "biometric") {
-    return (
-      <div className="biometric-login">
-        <div className="biometric-prompt">
-          <div className="biometric-icon">
-            <div className="fingerprint-animation">👆</div>
-          </div>
-
-          <h3>🔐 Biometric Authentication</h3>
-          <p>Please use your fingerprint, face, or device authentication</p>
-
-          {error && <div className="error-message">{error}</div>}
-
-          <div className="biometric-actions">
-            <button onClick={retryBiometric} className="btn btn-outline">
-              🔄 Try Again
-            </button>
-            <button onClick={onCancel} className="btn btn-secondary">
-              ❌ Cancel
-            </button>
-          </div>
-
-          <div className="biometric-help">
-            <p>
-              💡 <strong>Troubleshooting:</strong>
-            </p>
-            <ul>
-              <li>Make sure your finger is clean and dry</li>
-              <li>Position your finger correctly on the sensor</li>
-              <li>Try using face recognition if available</li>
-              <li>If error persists, disable and re-enable biometric in settings</li>
-            </ul>
-          </div>
-        </div>
-      </div>
-    )
+    startBiometricAuth()
   }
 
   return (
     <div className="biometric-login">
-      <div className="biometric-form">
-        <h3>🔐 Biometric Login</h3>
-        <p>Enter your username to start biometric authentication</p>
+      <div className="biometric-prompt">
+        <div className="biometric-icon">
+          <div className="fingerprint-animation">{loading ? "⏳" : error ? "❌" : "👆"}</div>
+        </div>
+
+        <h3>🔐 Biometric Authentication</h3>
+        {loading ? (
+          <p>Preparing biometric authentication...</p>
+        ) : error ? (
+          <p>Authentication failed. Please try again.</p>
+        ) : (
+          <p>Please use your fingerprint, face, or device authentication</p>
+        )}
 
         {error && <div className="error-message">{error}</div>}
 
-        <form onSubmit={handleUsernameSubmit}>
-          <div className="form-group">
-            <label htmlFor="username">Username or Email</label>
-            <input
-              type="text"
-              id="username"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              placeholder="Enter your username or email"
-              required
-              disabled={loading}
-            />
-          </div>
-
-          <div className="form-actions">
-            <button type="submit" disabled={loading} className="btn btn-primary">
-              {loading ? "⏳ Preparing..." : "🚀 Start Biometric Login"}
+        <div className="biometric-actions">
+          {error && (
+            <button onClick={retryBiometric} className="btn btn-primary" disabled={loading}>
+              {loading ? "⏳ Preparing..." : "🔄 Try Again"}
             </button>
+          )}
+          <button onClick={onCancel} className="btn btn-secondary">
+            ← Back to Password Login
+          </button>
+        </div>
 
-            <button type="button" onClick={onCancel} className="btn btn-outline">
-              ← Back to Password Login
-            </button>
-          </div>
-        </form>
+        <div className="biometric-help">
+          <p>
+            💡 <strong>Quick Authentication:</strong>
+          </p>
+          <ul>
+            <li>✨ No username required - just use your biometric</li>
+            <li>👆 Touch your fingerprint sensor</li>
+            <li>👤 Use face recognition if available</li>
+            <li>🔢 Enter device PIN/password if prompted</li>
+            <li>🚀 Automatic login after verification</li>
+          </ul>
 
-        <div className="biometric-info">
-          <h4>🛡️ Secure & Fast</h4>
-          <p>Biometric authentication provides enhanced security and faster access to your account.</p>
-
-          <div className="biometric-troubleshoot">
-            <h4>🔧 If biometric login fails:</h4>
-            <ol>
-              <li>Go to Biometric Settings</li>
-              <li>Disable biometric authentication</li>
-              <li>Re-enable it to refresh credentials</li>
-              <li>Try biometric login again</li>
-            </ol>
-          </div>
+          {error && (
+            <div className="troubleshoot-section">
+              <p>
+                🔧 <strong>Troubleshooting:</strong>
+              </p>
+              <ul>
+                <li>Make sure biometric is setup in Settings</li>
+                <li>Ensure device screen lock is enabled</li>
+                <li>Try using password login as backup</li>
+                <li>Clear browser cache if issues persist</li>
+              </ul>
+            </div>
+          )}
         </div>
       </div>
     </div>
