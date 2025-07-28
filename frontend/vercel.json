@@ -9,7 +9,7 @@
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "/app/api/$1"
+      "destination": "http://localhost:5000/api/$1"
     },
     {
       "source": "/(.*)",
@@ -30,10 +30,5 @@
         }
       ]
     }
-  ],
-  "functions": {
-    "app/api/**/*.js": {
-      "runtime": "vercel-nodejs@2.0.0"
-    }
-  }
+  ]
 }
