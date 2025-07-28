@@ -6,9 +6,26 @@ import axios from "axios"
 
 // Configure axios for production
 axios.defaults.withCredentials = true
-axios.defaults.baseURL =
-  import.meta.env.VITE_API_URL ||
-  (import.meta.env.PROD ? "https://your-backend-domain.vercel.app" : "http://localhost:5000")
+
+// Determine the API base URL
+const getApiBaseUrl = () => {
+  // If VITE_API_URL is set, use it
+  if (import.meta.env.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL
+  }
+
+  // In production, use the backend Vercel URL
+  if (import.meta.env.PROD) {
+    return "https://family-portal-backend.vercel.app"
+  }
+
+  // In development, use localhost
+  return "http://localhost:5000"
+}
+
+axios.defaults.baseURL = getApiBaseUrl()
+
+console.log("🔗 API Base URL:", axios.defaults.baseURL)
 
 // Add request interceptor for better error handling
 axios.interceptors.request.use(

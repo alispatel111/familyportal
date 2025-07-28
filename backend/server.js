@@ -107,12 +107,14 @@ const documentSchema = new mongoose.Schema({
 
 const Document = mongoose.model("Document", documentSchema)
 
-// CORS configuration - Updated for production
+// CORS configuration - Updated for Vercel deployment
 const allowedOrigins = [
   "http://localhost:5173",
   "http://localhost:3000",
   process.env.FRONTEND_URL,
-  "https://your-frontend-domain.vercel.app", // Replace with your actual frontend domain
+  // Add your actual Vercel frontend domain here after deployment
+  "https://family-portal-frontend.vercel.app",
+  // Allow any vercel.app subdomain for flexibility
 ].filter(Boolean)
 
 app.use(
@@ -121,9 +123,15 @@ app.use(
       // Allow requests with no origin (mobile apps, etc.)
       if (!origin) return callback(null, true)
 
+      // Allow any vercel.app domain for development/staging
+      if (origin && origin.includes(".vercel.app")) {
+        return callback(null, true)
+      }
+
       if (allowedOrigins.indexOf(origin) !== -1) {
         callback(null, true)
       } else {
+        console.log("CORS blocked origin:", origin)
         callback(new Error("Not allowed by CORS"))
       }
     },
