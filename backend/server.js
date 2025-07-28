@@ -11,6 +11,9 @@ require("dotenv").config()
 
 const app = express()
 
+// Trust proxy for Vercel
+app.set("trust proxy", 1)
+
 // Create uploads directory if it doesn't exist (for local development only)
 const uploadsDir = path.join(__dirname, "uploads")
 if (process.env.NODE_ENV !== "production" && !fs.existsSync(uploadsDir)) {
@@ -154,7 +157,7 @@ app.options("*", cors())
 app.use(express.json({ limit: "50mb" }))
 app.use(express.urlencoded({ extended: true, limit: "50mb" }))
 
-// Session configuration - Updated for production
+// Session configuration - FIXED for production
 app.use(
   session({
     secret: process.env.SESSION_SECRET || "your-secret-key-change-in-production",
@@ -163,22 +166,36 @@ app.use(
     store: MongoStore.create({
       mongoUrl: process.env.MONGODB_URI || "mongodb://localhost:27017/family-portal",
       collectionName: "sessions",
+      touchAfter: 24 * 3600, // lazy session update
     }),
     cookie: {
-      secure: process.env.NODE_ENV === "production",
+      secure: process.env.NODE_ENV === "production", // HTTPS only in production
       httpOnly: true,
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
       sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", // Important for cross-origin
-      // Remove domain restriction to allow cross-origin
     },
+    name: "familyportal.sid", // Custom session name
   }),
 )
 
-// Auth middleware
+// Enhanced Auth middleware with better logging
 const requireAuth = (req, res, next) => {
+  console.log("🔐 Auth Check:")
+  console.log("  - Session ID:", req.sessionID)
+  console.log("  - User ID in session:", req.session.userId)
+  console.log("  - Session data:", req.session)
+
   if (!req.session.userId) {
-    return res.status(401).json({ message: "Authentication required" })
+    console.log("❌ Authentication failed: No user ID in session")
+    return res.status(401).json({
+      message: "Authentication required",
+      sessionId: req.sessionID,
+      hasSession: !!req.session,
+      userId: req.session.userId,
+    })
   }
+
+  console.log("✅ Authentication successful for user:", req.session.userId)
   next()
 }
 
@@ -284,6 +301,17 @@ app.get("/health", (req, res) => {
   })
 })
 
+// Session debug route (remove in production)
+app.get("/api/debug/session", (req, res) => {
+  res.json({
+    sessionId: req.sessionID,
+    session: req.session,
+    cookies: req.headers.cookie,
+    userId: req.session.userId,
+    userRole: req.session.userRole,
+  })
+})
+
 // Auth Routes (same as before)
 app.post("/api/auth/signup", async (req, res) => {
   try {
@@ -321,6 +349,7 @@ app.post("/api/auth/signup", async (req, res) => {
     req.session.userRole = user.role
 
     console.log(`✅ New user registered: ${user.username} (${user.role})`)
+    console.log(`🔐 Session created: ${req.sessionID}`)
 
     res.status(201).json({
       message: "User created successfully",
@@ -363,6 +392,7 @@ app.post("/api/auth/login", async (req, res) => {
     req.session.userRole = user.role
 
     console.log(`✅ User logged in: ${user.username}`)
+    console.log(`🔐 Session created: ${req.sessionID}`)
 
     res.json({
       message: "Login successful",
@@ -387,7 +417,7 @@ app.post("/api/auth/logout", (req, res) => {
       console.error("Logout error:", err)
       return res.status(500).json({ message: "Could not log out" })
     }
-    res.clearCookie("connect.sid")
+    res.clearCookie("familyportal.sid")
     console.log(`✅ User logged out: ${userId}`)
     res.json({ message: "Logout successful" })
   })
@@ -406,7 +436,7 @@ app.get("/api/auth/me", requireAuth, async (req, res) => {
   }
 })
 
-// Biometric Authentication Routes
+// Biometric Authentication Routes - FIXED
 const crypto = require("crypto")
 const userCredentials = new Map()
 
@@ -416,8 +446,11 @@ const generateChallenge = () => {
 
 app.post("/api/auth/biometric/register", requireAuth, async (req, res) => {
   try {
+    console.log("🔐 Biometric registration request from user:", req.session.userId)
+
     const user = await User.findById(req.session.userId)
     if (!user) {
+      console.log("❌ User not found for biometric registration")
       return res.status(404).json({ message: "User not found" })
     }
 
@@ -428,7 +461,7 @@ app.post("/api/auth/biometric/register", requireAuth, async (req, res) => {
       challenge: challenge.toString("base64"),
       rp: {
         name: "Family Document Portal",
-        id: process.env.NODE_ENV === "production" ? "familyportal-backend.vercel.app" : "localhost", // <-- Backend domain yahan set kiya hai
+        id: process.env.NODE_ENV === "production" ? "familyportal.vercel.app" : "localhost", // Frontend domain
       },
       user: {
         id: Buffer.from(user._id.toString()).toString("base64"),
@@ -453,14 +486,14 @@ app.post("/api/auth/biometric/register", requireAuth, async (req, res) => {
       attestation: "direct",
     }
 
-    console.log(`🔐 Biometric registration initiated for user: ${user.username}`)
+    console.log(`✅ Biometric registration options generated for user: ${user.username}`)
 
     res.json({
       publicKeyCredentialCreationOptions,
       message: "Biometric registration options generated",
     })
   } catch (error) {
-    console.error("Biometric registration error:", error)
+    console.error("❌ Biometric registration error:", error)
     res.status(500).json({ message: "Server error during biometric registration" })
   }
 })
@@ -614,11 +647,12 @@ app.post("/api/auth/biometric/disable", requireAuth, async (req, res) => {
   }
 })
 
-// Document Routes - Updated for production
+// Document Routes - FIXED with better error handling
 app.post("/api/documents", requireAuth, upload.single("document"), async (req, res) => {
   try {
     console.log("=== DOCUMENT UPLOAD STARTED ===")
     console.log("User ID:", req.session.userId)
+    console.log("Session ID:", req.sessionID)
 
     if (!req.file) {
       console.error("❌ UPLOAD ERROR: No file received from Multer")

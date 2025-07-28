@@ -50,13 +50,18 @@ const BiometricSetup = ({ user, onUpdate }) => {
 
   const checkBiometricStatus = async () => {
     try {
+      console.log("🔍 Checking biometric status...")
       const response = await axios.get("/api/auth/biometric/status")
+      console.log("✅ Biometric status response:", response.data)
       setBiometricStatus((prev) => ({
         ...prev,
         enabled: response.data.biometricEnabled,
       }))
     } catch (error) {
-      console.error("Error checking biometric status:", error)
+      console.error("❌ Error checking biometric status:", error)
+      if (error.response?.status === 401) {
+        setError("Please login again to access biometric settings")
+      }
     }
   }
 
@@ -141,6 +146,8 @@ const BiometricSetup = ({ user, onUpdate }) => {
         setError("Security error during biometric registration")
       } else if (error.name === "InvalidCharacterError") {
         setError("Invalid data format received from server. Please try again.")
+      } else if (error.response?.status === 401) {
+        setError("Authentication failed. Please login again.")
       } else {
         setError(error.message || error.response?.data?.message || "Failed to register biometric authentication")
       }
@@ -262,6 +269,25 @@ const BiometricSetup = ({ user, onUpdate }) => {
             <li>🚫 No password required</li>
             <li>📱 Device-specific authentication</li>
           </ul>
+
+          <div className="biometric-help">
+            <h4>📖 How to Enable Biometric Authentication:</h4>
+            <ol>
+              <li>🔐 Click "Enable Biometric Login" button</li>
+              <li>👆 Follow your device's biometric prompt (fingerprint/face/PIN)</li>
+              <li>✅ Confirm the authentication</li>
+              <li>🎉 Biometric login is now active!</li>
+            </ol>
+
+            <h4>🔧 Troubleshooting:</h4>
+            <ul>
+              <li>Make sure you're logged in properly</li>
+              <li>Enable device lock screen (PIN/Pattern/Password)</li>
+              <li>Add fingerprint/face in device settings</li>
+              <li>Use HTTPS (secure connection)</li>
+              <li>Try refreshing the page if it fails</li>
+            </ul>
+          </div>
         </div>
       </div>
     </div>
