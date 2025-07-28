@@ -9,14 +9,14 @@ axios.defaults.withCredentials = true
 
 // Determine the API base URL
 const getApiBaseUrl = () => {
-  // If VITE_API_URL is set, use it
+  // If VITE_API_URL is set (e.g., for specific staging environments), use it
   if (import.meta.env.VITE_API_URL) {
     return import.meta.env.VITE_API_URL
   }
 
   // In production, use your actual backend Vercel URL
   if (import.meta.env.PROD) {
-    return "https://familyportal-backend.vercel.app"
+    return "https://familyportal-backend.vercel.app" // <-- Yahan tumhara deployed backend URL hai
   }
 
   // In development, use localhost
