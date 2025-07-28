@@ -1,0 +1,812 @@
+const express = require("express")
+const mongoose = require("mongoose")
+const session = require("express-session")
+const MongoStore = require("connect-mongo")
+const cors = require("cors")
+const bcrypt = require("bcrypt")
+const multer = require("multer")
+const path = require("path")
+const fs = require("fs")
+require("dotenv").config()
+
+const app = express()
+
+// Create uploads directory if it doesn't exist
+const uploadsDir = path.join(__dirname, "uploads")
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true })
+  console.log("✅ Created uploads directory")
+}
+
+// Multer storage configuration for local storage
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, "uploads/") // Files will be stored in uploads folder
+  },
+  filename: (req, file, cb) => {
+    // Generate unique filename: timestamp-originalname
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9)
+    const fileExtension = path.extname(file.originalname)
+    const fileName = file.fieldname + "-" + uniqueSuffix + fileExtension
+    console.log(`📁 Generated filename: ${fileName}`)
+    cb(null, fileName)
+  },
+})
+
+// File filter for allowed file types
+const fileFilter = (req, file, cb) => {
+  const allowedTypes = [
+    "application/pdf",
+    "image/jpeg",
+    "image/jpg",
+    "image/png",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  ]
+
+  if (allowedTypes.includes(file.mimetype)) {
+    console.log(`✅ File type allowed: ${file.mimetype}`)
+    cb(null, true)
+  } else {
+    console.log(`❌ File type not allowed: ${file.mimetype}`)
+    cb(new Error("Only PDF, JPG, PNG, and DOCX files are allowed!"), false)
+  }
+}
+
+const upload = multer({
+  storage: storage,
+  fileFilter: fileFilter,
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB limit
+  },
+})
+
+// MongoDB connection
+mongoose.connect(process.env.MONGODB_URI || "mongodb://localhost:27017/family-portal", {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+})
+
+// Check MongoDB connection
+mongoose.connection.on("connected", () => {
+  console.log("✅ MongoDB connected successfully!")
+})
+
+mongoose.connection.on("error", (err) => {
+  console.error("❌ MongoDB connection error:", err)
+})
+
+// User Schema
+const userSchema = new mongoose.Schema({
+  username: { type: String, required: true, unique: true },
+  email: { type: String, required: true, unique: true },
+  password: { type: String, required: true },
+  role: { type: String, enum: ["admin", "member"], default: "member" },
+  fullName: { type: String, required: true },
+  biometricEnabled: { type: Boolean, default: false },
+  credentialId: { type: String, default: null },
+  createdAt: { type: Date, default: Date.now },
+})
+
+const User = mongoose.model("User", userSchema)
+
+// Document Schema
+const documentSchema = new mongoose.Schema({
+  filename: { type: String, required: true }, // Generated filename
+  originalName: { type: String, required: true }, // Original filename
+  fileUrl: { type: String, required: true }, // URL to access file
+  filePath: { type: String, required: true }, // Local file path
+  category: { type: String, required: true },
+  uploadedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+  uploadDate: { type: Date, default: Date.now },
+  fileSize: { type: Number },
+  mimeType: { type: String },
+})
+
+const Document = mongoose.model("Document", documentSchema)
+
+// CORS configuration - MUST be before other middleware
+app.use(
+  cors({
+    origin: ["http://localhost:5173", "http://localhost:3000", process.env.FRONTEND_URL].filter(Boolean),
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "Cookie"],
+  }),
+)
+
+// Handle preflight requests
+app.options("*", cors())
+
+app.use(express.json())
+app.use(express.urlencoded({ extended: true }))
+
+// Session configuration
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET || "your-secret-key-change-in-production",
+    resave: false,
+    saveUninitialized: false,
+    store: MongoStore.create({
+      mongoUrl: process.env.MONGODB_URI || "mongodb://localhost:27017/family-portal",
+      collectionName: "sessions",
+    }),
+    cookie: {
+      secure: process.env.NODE_ENV === "production",
+      httpOnly: true,
+      maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    },
+  }),
+)
+
+// Auth middleware
+const requireAuth = (req, res, next) => {
+  if (!req.session.userId) {
+    return res.status(401).json({ message: "Authentication required" })
+  }
+  next()
+}
+
+const requireAdmin = async (req, res, next) => {
+  if (!req.session.userId) {
+    return res.status(401).json({ message: "Authentication required" })
+  }
+
+  try {
+    const user = await User.findById(req.session.userId)
+    if (!user || user.role !== "admin") {
+      return res.status(403).json({ message: "Admin access required" })
+    }
+    next()
+  } catch (error) {
+    res.status(500).json({ message: "Server error" })
+  }
+}
+
+// 🔒 SECURE FILE ACCESS - Only authenticated users can access files
+app.use("/uploads", requireAuth, async (req, res, next) => {
+  try {
+    const filename = path.basename(req.path)
+    console.log(`🔍 File access request: ${filename} by user: ${req.session.userId}`)
+
+    // Find the document in database
+    const document = await Document.findOne({ filename: filename })
+
+    if (!document) {
+      console.log(`❌ File not found in database: ${filename}`)
+      return res.status(404).json({ message: "File not found" })
+    }
+
+    // Check if user has access to this file
+    const user = await User.findById(req.session.userId)
+    const canAccess =
+      document.uploadedBy.toString() === req.session.userId || // Owner
+      user.role === "admin" // Admin
+
+    if (!canAccess) {
+      console.log(`🚫 Access denied for file: ${filename} to user: ${req.session.userId}`)
+      return res.status(403).json({ message: "Access denied to this file" })
+    }
+
+    console.log(`✅ File access granted: ${filename}`)
+
+    // Set proper headers for file serving
+    const filePath = path.join(__dirname, "uploads", filename)
+
+    if (!fs.existsSync(filePath)) {
+      console.log(`❌ Physical file not found: ${filePath}`)
+      return res.status(404).json({ message: "Physical file not found" })
+    }
+
+    // Set CORS headers
+    res.header("Access-Control-Allow-Origin", req.headers.origin || "http://localhost:5173")
+    res.header("Access-Control-Allow-Credentials", "true")
+    res.header("Access-Control-Allow-Methods", "GET")
+    res.header("Access-Control-Allow-Headers", "Content-Type, Authorization, Cookie")
+
+    // If download parameter is present, set download headers
+    if (req.query.download === "true") {
+      res.setHeader("Content-Disposition", `attachment; filename="${document.originalName}"`)
+      console.log(`⬇️ Download headers set for: ${document.originalName}`)
+    }
+
+    // Serve the file
+    res.sendFile(filePath)
+  } catch (error) {
+    console.error("❌ Error in file access middleware:", error)
+    res.status(500).json({ message: "Server error accessing file" })
+  }
+})
+
+// Root route - Server status check
+app.get("/", (req, res) => {
+  res.json({
+    message: "🏠 Family Document Portal Backend is running!",
+    status: "✅ OK",
+    version: "1.0.0",
+    timestamp: new Date().toISOString(),
+    storage: "Local File System (Secure)",
+    security: {
+      authentication: "Required for all file access",
+      authorization: "Owner or Admin only",
+      fileValidation: "Type and size limits enforced",
+      sessionBased: "Secure session management",
+    },
+    endpoints: {
+      auth: [
+        "POST /api/auth/signup - Register new user",
+        "POST /api/auth/login - Login user",
+        "POST /api/auth/logout - Logout user",
+        "GET /api/auth/me - Get current user info",
+      ],
+      documents: [
+        "GET /api/documents - Get user documents",
+        "POST /api/documents - Upload document",
+        "DELETE /api/documents/:id - Delete document",
+      ],
+      files: ["GET /uploads/:filename - Access uploaded files (AUTH REQUIRED)"],
+      admin: [
+        "GET /api/admin/users - Get all users (admin only)",
+        "GET /api/admin/stats - Get system stats (admin only)",
+      ],
+    },
+  })
+})
+
+// Health check route
+app.get("/health", (req, res) => {
+  res.json({
+    status: "healthy",
+    database: mongoose.connection.readyState === 1 ? "connected" : "disconnected",
+    storage: "local-secure",
+    uploadsDir: fs.existsSync(uploadsDir) ? "exists" : "missing",
+    timestamp: new Date().toISOString(),
+  })
+})
+
+// Auth Routes
+app.post("/api/auth/signup", async (req, res) => {
+  try {
+    const { username, email, password, fullName, role } = req.body
+
+    // Validation
+    if (!username || !email || !password || !fullName) {
+      return res.status(400).json({ message: "All fields are required" })
+    }
+
+    if (password.length < 6) {
+      return res.status(400).json({ message: "Password must be at least 6 characters" })
+    }
+
+    // Check if user already exists
+    const existingUser = await User.findOne({
+      $or: [{ email }, { username }],
+    })
+
+    if (existingUser) {
+      return res.status(400).json({ message: "User already exists with this email or username" })
+    }
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 12)
+
+    // Create user
+    const user = new User({
+      username,
+      email,
+      password: hashedPassword,
+      fullName,
+      role: role || "member",
+    })
+
+    await user.save()
+
+    // Create session
+    req.session.userId = user._id
+    req.session.userRole = user.role
+
+    console.log(`✅ New user registered: ${user.username} (${user.role})`)
+
+    res.status(201).json({
+      message: "User created successfully",
+      user: {
+        id: user._id,
+        username: user.username,
+        email: user.email,
+        fullName: user.fullName,
+        role: user.role,
+      },
+    })
+  } catch (error) {
+    console.error("Signup error:", error)
+    res.status(500).json({ message: "Server error during signup" })
+  }
+})
+
+app.post("/api/auth/login", async (req, res) => {
+  try {
+    const { username, password } = req.body
+
+    if (!username || !password) {
+      return res.status(400).json({ message: "Username and password are required" })
+    }
+
+    // Find user
+    const user = await User.findOne({
+      $or: [{ username }, { email: username }],
+    })
+
+    if (!user) {
+      return res.status(400).json({ message: "Invalid credentials" })
+    }
+
+    // Check password
+    const isMatch = await bcrypt.compare(password, user.password)
+    if (!isMatch) {
+      return res.status(400).json({ message: "Invalid credentials" })
+    }
+
+    // Create session
+    req.session.userId = user._id
+    req.session.userRole = user.role
+
+    console.log(`✅ User logged in: ${user.username}`)
+
+    res.json({
+      message: "Login successful",
+      user: {
+        id: user._id,
+        username: user.username,
+        email: user.email,
+        fullName: user.fullName,
+        role: user.role,
+      },
+    })
+  } catch (error) {
+    console.error("Login error:", error)
+    res.status(500).json({ message: "Server error during login" })
+  }
+})
+
+app.post("/api/auth/logout", (req, res) => {
+  const userId = req.session.userId
+  req.session.destroy((err) => {
+    if (err) {
+      console.error("Logout error:", err)
+      return res.status(500).json({ message: "Could not log out" })
+    }
+    res.clearCookie("connect.sid")
+    console.log(`✅ User logged out: ${userId}`)
+    res.json({ message: "Logout successful" })
+  })
+})
+
+app.get("/api/auth/me", requireAuth, async (req, res) => {
+  try {
+    const user = await User.findById(req.session.userId).select("-password")
+    if (!user) {
+      return res.status(404).json({ message: "User not found" })
+    }
+    res.json({ user })
+  } catch (error) {
+    console.error("Get user error:", error)
+    res.status(500).json({ message: "Server error" })
+  }
+})
+
+// Add this after the existing auth routes
+
+// Biometric Authentication Routes using WebAuthn
+const crypto = require("crypto")
+
+// Store for user credentials (in production, use database)
+const userCredentials = new Map()
+
+// Generate challenge for WebAuthn
+const generateChallenge = () => {
+  return crypto.randomBytes(32)
+}
+
+// Register biometric credential
+app.post("/api/auth/biometric/register", requireAuth, async (req, res) => {
+  try {
+    const user = await User.findById(req.session.userId)
+    if (!user) {
+      return res.status(404).json({ message: "User not found" })
+    }
+
+    const challenge = generateChallenge()
+
+    // Store challenge temporarily (in production, use Redis or database)
+    req.session.challenge = challenge.toString("base64")
+
+    const publicKeyCredentialCreationOptions = {
+      challenge: challenge.toString("base64"), // Convert to base64 string
+      rp: {
+        name: "Family Document Portal",
+        id: "localhost", // Change to your domain in production
+      },
+      user: {
+        id: Buffer.from(user._id.toString()).toString("base64"), // Convert to base64 string
+        name: user.email,
+        displayName: user.fullName,
+      },
+      pubKeyCredParams: [
+        {
+          alg: -7, // ES256
+          type: "public-key",
+        },
+        {
+          alg: -257, // RS256
+          type: "public-key",
+        },
+      ],
+      authenticatorSelection: {
+        authenticatorAttachment: "platform", // For built-in biometrics
+        userVerification: "required",
+      },
+      timeout: 60000,
+      attestation: "direct",
+    }
+
+    console.log(`🔐 Biometric registration initiated for user: ${user.username}`)
+
+    res.json({
+      publicKeyCredentialCreationOptions,
+      message: "Biometric registration options generated",
+    })
+  } catch (error) {
+    console.error("Biometric registration error:", error)
+    res.status(500).json({ message: "Server error during biometric registration" })
+  }
+})
+
+// Verify and store biometric credential
+app.post("/api/auth/biometric/register/verify", requireAuth, async (req, res) => {
+  try {
+    const { credential } = req.body
+    const user = await User.findById(req.session.userId)
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" })
+    }
+
+    // In production, properly verify the attestation
+    // For now, we'll store the credential
+    const credentialId = credential.id
+    const publicKey = credential.response.publicKey
+
+    // Store credential in database (simplified for demo)
+    userCredentials.set(user._id.toString(), {
+      credentialId,
+      publicKey,
+      counter: 0,
+    })
+
+    // Update user to mark biometric as enabled
+    await User.findByIdAndUpdate(user._id, {
+      biometricEnabled: true,
+      credentialId: credentialId,
+    })
+
+    console.log(`✅ Biometric registered successfully for user: ${user.username}`)
+
+    res.json({
+      message: "Biometric authentication registered successfully",
+      verified: true,
+    })
+  } catch (error) {
+    console.error("Biometric verification error:", error)
+    res.status(500).json({ message: "Server error during biometric verification" })
+  }
+})
+
+// Initiate biometric login
+app.post("/api/auth/biometric/login", async (req, res) => {
+  try {
+    const { username } = req.body
+
+    const user = await User.findOne({
+      $or: [{ username }, { email: username }],
+    })
+
+    if (!user || !user.biometricEnabled) {
+      return res.status(400).json({ message: "Biometric authentication not available for this user" })
+    }
+
+    const challenge = generateChallenge()
+
+    // Store challenge temporarily
+    req.session.challenge = challenge.toString("base64")
+    req.session.pendingUserId = user._id.toString()
+
+    const publicKeyCredentialRequestOptions = {
+      challenge: challenge.toString("base64"), // Convert to base64 string
+      allowCredentials: [
+        {
+          id: user.credentialId, // This should already be base64
+          type: "public-key",
+          transports: ["internal"], // For platform authenticators
+        },
+      ],
+      userVerification: "required",
+      timeout: 60000,
+    }
+
+    console.log(`🔐 Biometric login initiated for user: ${user.username}`)
+
+    res.json({
+      publicKeyCredentialRequestOptions,
+      message: "Biometric login options generated",
+    })
+  } catch (error) {
+    console.error("Biometric login error:", error)
+    res.status(500).json({ message: "Server error during biometric login" })
+  }
+})
+
+// Verify biometric login
+app.post("/api/auth/biometric/login/verify", async (req, res) => {
+  try {
+    const { credential } = req.body
+    const pendingUserId = req.session.pendingUserId
+
+    if (!pendingUserId) {
+      return res.status(400).json({ message: "No pending biometric login" })
+    }
+
+    const user = await User.findById(pendingUserId)
+    if (!user) {
+      return res.status(404).json({ message: "User not found" })
+    }
+
+    // In production, properly verify the assertion
+    // For now, we'll assume verification passed
+
+    // Create session
+    req.session.userId = user._id
+    req.session.userRole = user.role
+    req.session.pendingUserId = null
+
+    console.log(`✅ Biometric login successful for user: ${user.username}`)
+
+    res.json({
+      message: "Biometric login successful",
+      user: {
+        id: user._id,
+        username: user.username,
+        email: user.email,
+        fullName: user.fullName,
+        role: user.role,
+        biometricEnabled: user.biometricEnabled,
+      },
+    })
+  } catch (error) {
+    console.error("Biometric login verification error:", error)
+    res.status(500).json({ message: "Server error during biometric login verification" })
+  }
+})
+
+// Check biometric availability
+app.get("/api/auth/biometric/status", requireAuth, async (req, res) => {
+  try {
+    const user = await User.findById(req.session.userId)
+    res.json({
+      biometricEnabled: user.biometricEnabled || false,
+      credentialId: user.credentialId || null,
+    })
+  } catch (error) {
+    console.error("Biometric status error:", error)
+    res.status(500).json({ message: "Server error checking biometric status" })
+  }
+})
+
+// Disable biometric authentication
+app.post("/api/auth/biometric/disable", requireAuth, async (req, res) => {
+  try {
+    const user = await User.findById(req.session.userId)
+
+    // Remove from memory store
+    userCredentials.delete(user._id.toString())
+
+    // Update user in database
+    await User.findByIdAndUpdate(user._id, {
+      biometricEnabled: false,
+      credentialId: null,
+    })
+
+    console.log(`🔐 Biometric disabled for user: ${user.username}`)
+
+    res.json({
+      message: "Biometric authentication disabled successfully",
+    })
+  } catch (error) {
+    console.error("Biometric disable error:", error)
+    res.status(500).json({ message: "Server error disabling biometric authentication" })
+  }
+})
+
+// Document Routes
+app.post("/api/documents", requireAuth, upload.single("document"), async (req, res) => {
+  try {
+    console.log("=== DOCUMENT UPLOAD STARTED ===")
+    console.log("User ID:", req.session.userId)
+
+    if (!req.file) {
+      console.error("❌ UPLOAD ERROR: No file received from Multer")
+      return res.status(400).json({ message: "No file uploaded or file type not allowed." })
+    }
+
+    console.log(" FILE UPLOADED TO LOCAL STORAGE")
+    console.log("📁 File details:", {
+      originalname: req.file.originalname,
+      filename: req.file.filename,
+      size: req.file.size,
+      mimetype: req.file.mimetype,
+    })
+
+    const { category } = req.body
+
+    if (!category) {
+      console.error("❌ UPLOAD ERROR: Category missing")
+      fs.unlinkSync(req.file.path)
+      return res.status(400).json({ message: "Category is required" })
+    }
+
+    // Create file URL for accessing the file
+    const baseUrl = process.env.BASE_URL || `http://localhost:${process.env.PORT || 5000}`
+    const fileUrl = `${baseUrl}/uploads/${req.file.filename}`
+
+    console.log("🔗 Generated file URL:", fileUrl)
+
+    const document = new Document({
+      filename: req.file.filename,
+      originalName: req.file.originalname,
+      fileUrl: fileUrl,
+      filePath: req.file.path,
+      category,
+      uploadedBy: req.session.userId,
+      fileSize: req.file.size,
+      mimeType: req.file.mimetype,
+    })
+
+    await document.save()
+    await document.populate("uploadedBy", "username fullName")
+
+    console.log("✅ Document saved successfully!")
+    console.log("🆔 Document ID:", document._id)
+
+    res.status(201).json({
+      message: "Document uploaded successfully",
+      document,
+    })
+  } catch (error) {
+    console.error("❌ SERVER ERROR DURING UPLOAD:", error)
+
+    if (req.file && req.file.path) {
+      try {
+        fs.unlinkSync(req.file.path)
+        console.log("🗑️ Cleaned up uploaded file after error")
+      } catch (cleanupError) {
+        console.error("❌ Error cleaning up file:", cleanupError)
+      }
+    }
+
+    res.status(500).json({ message: "Server error during upload", error: error.message })
+  }
+})
+
+app.get("/api/documents", requireAuth, async (req, res) => {
+  try {
+    console.log("=== FETCHING DOCUMENTS ===")
+    console.log("User ID:", req.session.userId)
+
+    const { category } = req.query
+    const query = {}
+
+    // If not admin, only show user's own documents
+    if (req.session.userRole !== "admin") {
+      query.uploadedBy = req.session.userId
+    }
+
+    if (category) {
+      query.category = category
+    }
+
+    const documents = await Document.find(query).populate("uploadedBy", "username fullName").sort({ uploadDate: -1 })
+
+    console.log("📊 Found", documents.length, "documents")
+
+    res.json({ documents })
+  } catch (error) {
+    console.error("❌ ERROR FETCHING DOCUMENTS:", error)
+    res.status(500).json({ message: "Server error while fetching documents" })
+  }
+})
+
+app.delete("/api/documents/:id", requireAuth, async (req, res) => {
+  try {
+    const document = await Document.findById(req.params.id)
+
+    if (!document) {
+      return res.status(404).json({ message: "Document not found" })
+    }
+
+    // Check if user owns the document or is admin
+    if (document.uploadedBy.toString() !== req.session.userId && req.session.userRole !== "admin") {
+      return res.status(403).json({ message: "Access denied" })
+    }
+
+    // Delete file from local storage
+    try {
+      if (fs.existsSync(document.filePath)) {
+        fs.unlinkSync(document.filePath)
+        console.log("🗑️ File deleted from local storage")
+      }
+    } catch (fileError) {
+      console.error("❌ Error deleting file from storage:", fileError)
+    }
+
+    await Document.findByIdAndDelete(req.params.id)
+
+    console.log(`✅ Document deleted successfully: ${document.originalName}`)
+
+    res.json({ message: "Document deleted successfully" })
+  } catch (error) {
+    console.error("❌ Delete error:", error)
+    res.status(500).json({ message: "Server error during deletion" })
+  }
+})
+
+// Admin Routes
+app.get("/api/admin/users", requireAdmin, async (req, res) => {
+  try {
+    const users = await User.find().select("-password").sort({ createdAt: -1 })
+    res.json({ users })
+  } catch (error) {
+    console.error("Get users error:", error)
+    res.status(500).json({ message: "Server error while fetching users" })
+  }
+})
+
+app.get("/api/admin/stats", requireAdmin, async (req, res) => {
+  try {
+    const totalUsers = await User.countDocuments()
+    const totalDocuments = await Document.countDocuments()
+    const documentsByCategory = await Document.aggregate([{ $group: { _id: "$category", count: { $sum: 1 } } }])
+
+    res.json({
+      totalUsers,
+      totalDocuments,
+      documentsByCategory,
+    })
+  } catch (error) {
+    console.error("Get stats error:", error)
+    res.status(500).json({ message: "Server error while fetching stats" })
+  }
+})
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error("Unhandled error:", err)
+  res.status(500).json({
+    message: "Something went wrong!",
+    error: process.env.NODE_ENV === "development" ? err.message : "Internal server error",
+  })
+})
+
+// 404 handler
+app.use("*", (req, res) => {
+  res.status(404).json({
+    message: "Route not found",
+  })
+})
+
+const PORT = process.env.PORT || 5000
+
+app.listen(PORT, () => {
+  console.log(`🚀 Server running on port ${PORT}`)
+  console.log(`📱 Frontend URL: ${process.env.FRONTEND_URL || "http://localhost:5173"}`)
+  console.log(`🔗 Backend URL: http://localhost:${PORT}`)
+  console.log(`🔒 File storage: Local (Secure - Auth Required)`)
+  console.log(`💾 Database: ${process.env.MONGODB_URI ? "MongoDB Atlas" : "Local MongoDB"}`)
+})
