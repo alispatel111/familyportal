@@ -7,23 +7,9 @@ import axios from "axios"
 // Configure axios for production
 axios.defaults.withCredentials = true
 
-// Determine the API base URL
-const getApiBaseUrl = () => {
-  // If VITE_API_URL is set (e.g., for specific staging environments), use it
-  if (import.meta.env.VITE_API_URL) {
-    return import.meta.env.VITE_API_URL
-  }
-
-  // In production, use your actual backend Vercel URL
-  if (import.meta.env.PROD) {
-    return "https://familyportal-backend.vercel.app" // <-- Yahan tumhara deployed backend URL hai
-  }
-
-  // In development, use localhost
-  return "http://localhost:5000"
-}
-
-axios.defaults.baseURL = getApiBaseUrl()
+// Directly set the API Base URL to your deployed backend URL
+// This ensures it always points to the Vercel backend in any environment
+axios.defaults.baseURL = "https://familyportal-backend.vercel.app" // <-- Yahan tumhara deployed backend URL hai
 
 console.log("🔗 API Base URL:", axios.defaults.baseURL)
 
