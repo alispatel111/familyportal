@@ -6,13 +6,7 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: 5173,
-    proxy: {
-      "/api": {
-        target: process.env.VITE_API_URL || "http://localhost:5000",
-        changeOrigin: true,
-        secure: false,
-      },
-    },
+    // Remove proxy since we're using deployed backend
   },
   build: {
     outDir: "dist",

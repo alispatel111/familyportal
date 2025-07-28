@@ -111,9 +111,9 @@ const Document = mongoose.model("Document", documentSchema)
 const allowedOrigins = [
   "http://localhost:5173",
   "http://localhost:3000",
+  "https://familyportal.vercel.app", // Your exact frontend URL
+  "https://familyportal2.vercel.app", // Alternative if needed
   process.env.FRONTEND_URL,
-  "https://familyportal.vercel.app", // <-- Tumhara exact frontend URL yahan add kiya hai
-  // Allow any vercel.app subdomain for flexibility
 ].filter(Boolean)
 
 app.use(
@@ -160,7 +160,8 @@ app.use(
       secure: process.env.NODE_ENV === "production",
       httpOnly: true,
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
-      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", // Changed to "none" for cross-origin
+      domain: process.env.NODE_ENV === "production" ? ".vercel.app" : undefined, // Allow subdomain sharing
     },
   }),
 )

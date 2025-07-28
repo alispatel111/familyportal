@@ -7,9 +7,9 @@ import axios from "axios"
 // Configure axios for production
 axios.defaults.withCredentials = true
 
-// Directly set the API Base URL to your deployed backend URL
-// This ensures it always points to the Vercel backend in any environment
-axios.defaults.baseURL = "https://familyportal-backend.vercel.app" // <-- Yahan tumhara deployed backend URL hai
+// Always use the deployed backend URL
+const API_BASE_URL = "https://familyportal-backend.vercel.app"
+axios.defaults.baseURL = API_BASE_URL
 
 console.log("🔗 API Base URL:", axios.defaults.baseURL)
 
@@ -17,6 +17,8 @@ console.log("🔗 API Base URL:", axios.defaults.baseURL)
 axios.interceptors.request.use(
   (config) => {
     console.log(`🚀 API Request: ${config.method?.toUpperCase()} ${config.url}`)
+    // Ensure credentials are always sent
+    config.withCredentials = true
     return config
   },
   (error) => {
@@ -33,6 +35,18 @@ axios.interceptors.response.use(
   },
   (error) => {
     console.error("❌ Response Error:", error.response?.status, error.response?.data)
+
+    // Handle specific error cases
+    if (error.code === "ERR_NETWORK") {
+      console.error("🌐 Network Error: Check if backend is accessible")
+    }
+    if (error.response?.status === 404) {
+      console.error("🔍 404 Error: API endpoint not found")
+    }
+    if (error.response?.status === 401) {
+      console.error("🔐 401 Error: Authentication required")
+    }
+
     return Promise.reject(error)
   },
 )
