@@ -6,7 +6,7 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: 5173,
-    // Remove proxy since we're using deployed backend
+    // No proxy needed - using deployed backend directly
   },
   build: {
     outDir: "dist",
@@ -19,5 +19,9 @@ export default defineConfig({
         },
       },
     },
+  },
+  define: {
+    // Ensure no localhost references in build
+    "process.env.NODE_ENV": JSON.stringify(process.env.NODE_ENV || "production"),
   },
 })

@@ -119,18 +119,26 @@ const allowedOrigins = [
 app.use(
   cors({
     origin: (origin, callback) => {
+      console.log("🌐 CORS Request from origin:", origin)
+
       // Allow requests with no origin (mobile apps, etc.)
-      if (!origin) return callback(null, true)
+      if (!origin) {
+        console.log("✅ CORS: Allowing request with no origin")
+        return callback(null, true)
+      }
 
       // Allow any vercel.app domain for development/staging
       if (origin && origin.includes(".vercel.app")) {
+        console.log("✅ CORS: Allowing Vercel domain:", origin)
         return callback(null, true)
       }
 
       if (allowedOrigins.indexOf(origin) !== -1) {
+        console.log("✅ CORS: Allowing whitelisted origin:", origin)
         callback(null, true)
       } else {
-        console.log("CORS blocked origin:", origin)
+        console.log("❌ CORS blocked origin:", origin)
+        console.log("📋 Allowed origins:", allowedOrigins)
         callback(new Error("Not allowed by CORS"))
       }
     },
@@ -160,8 +168,8 @@ app.use(
       secure: process.env.NODE_ENV === "production",
       httpOnly: true,
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
-      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", // Changed to "none" for cross-origin
-      domain: process.env.NODE_ENV === "production" ? ".vercel.app" : undefined, // Allow subdomain sharing
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", // Important for cross-origin
+      // Remove domain restriction to allow cross-origin
     },
   }),
 )
