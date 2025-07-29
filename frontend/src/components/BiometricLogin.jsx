@@ -2,15 +2,16 @@
 
 import { useState, useEffect } from "react"
 import axios from "axios"
+import "../styles/biometric.css"
+import "../styles/buttons.css"
 
 const BiometricLogin = ({ onLogin, onCancel }) => {
-  const [loading, setLoading] = useState(true) // Start with loading true
+  const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
-  const [step, setStep] = useState("preparing") // Start with preparing step
+  const [step, setStep] = useState("preparing")
 
   useEffect(() => {
     console.log("🔐 BiometricLogin component mounted - starting immediate auth")
-    // Small delay to ensure component is fully mounted
     setTimeout(() => {
       startImmediateBiometricAuth()
     }, 100)
@@ -25,7 +26,6 @@ const BiometricLogin = ({ onLogin, onCancel }) => {
     try {
       console.log("📡 Calling immediate biometric login API...")
 
-      // Call the immediate biometric login endpoint
       const response = await axios.post("/api/auth/biometric/login/immediate")
       const { publicKeyCredentialRequestOptions } = response.data
 
@@ -36,7 +36,6 @@ const BiometricLogin = ({ onLogin, onCancel }) => {
         throw new Error("No biometric options received from server")
       }
 
-      // Immediately start biometric authentication
       await performBiometricAuth(publicKeyCredentialRequestOptions)
     } catch (error) {
       console.error("❌ Immediate biometric login failed:", error)
@@ -58,14 +57,12 @@ const BiometricLogin = ({ onLogin, onCancel }) => {
       console.log("🔐 Performing WebAuthn authentication...")
       setStep("biometric-prompt")
 
-      // Convert challenge from base64 string to Uint8Array
       const challengeString = options.challenge
       if (!challengeString) {
         throw new Error("No challenge received from server")
       }
 
       try {
-        // Ensure proper base64 padding
         const paddedChallenge = challengeString.padEnd(
           challengeString.length + ((4 - (challengeString.length % 4)) % 4),
           "=",
@@ -77,7 +74,6 @@ const BiometricLogin = ({ onLogin, onCancel }) => {
         throw new Error("Invalid challenge format received from server")
       }
 
-      // Convert allowCredentials id from base64 string to Uint8Array
       if (options.allowCredentials && options.allowCredentials.length > 0) {
         console.log(`🔑 Converting ${options.allowCredentials.length} credential IDs...`)
 
@@ -85,14 +81,11 @@ const BiometricLogin = ({ onLogin, onCancel }) => {
           try {
             console.log(`🔑 Converting credential ${index + 1}:`, cred.id)
 
-            // Handle different credential ID formats
             let credentialIdBytes
             if (typeof cred.id === "string") {
-              // Ensure proper base64 padding
               const paddedCredId = cred.id.padEnd(cred.id.length + ((4 - (cred.id.length % 4)) % 4), "=")
               credentialIdBytes = Uint8Array.from(atob(paddedCredId), (c) => c.charCodeAt(0))
             } else if (Array.isArray(cred.id)) {
-              // If it's already an array, convert to Uint8Array
               credentialIdBytes = new Uint8Array(cred.id)
             } else {
               throw new Error("Unknown credential ID format")
@@ -114,7 +107,6 @@ const BiometricLogin = ({ onLogin, onCancel }) => {
 
       console.log("🔐 Starting WebAuthn credential.get()...")
 
-      // Get credential using WebAuthn
       const credential = await navigator.credentials.get({
         publicKey: options,
       })
@@ -124,7 +116,6 @@ const BiometricLogin = ({ onLogin, onCancel }) => {
 
       setStep("verifying")
 
-      // Send credential to server for verification and user identification
       const verificationData = {
         credential: {
           id: credential.id,
@@ -149,7 +140,6 @@ const BiometricLogin = ({ onLogin, onCancel }) => {
 
       setStep("success")
 
-      // Small delay to show success state
       setTimeout(() => {
         onLogin(verifyResponse.data.user)
       }, 500)
@@ -191,9 +181,14 @@ const BiometricLogin = ({ onLogin, onCancel }) => {
         return (
           <>
             <div className="biometric-icon">
-              <div className="fingerprint-animation">⏳</div>
+              <div className="fingerprint-animation preparing">
+                <i className="fas fa-hourglass-half"></i>
+              </div>
             </div>
-            <h3>🔐 Preparing Biometric Login</h3>
+            <h3>
+              <i className="fas fa-cog"></i>
+              Preparing Biometric Login
+            </h3>
             <p>Setting up biometric authentication...</p>
           </>
         )
@@ -202,9 +197,14 @@ const BiometricLogin = ({ onLogin, onCancel }) => {
         return (
           <>
             <div className="biometric-icon">
-              <div className="fingerprint-animation">🔍</div>
+              <div className="fingerprint-animation authenticating">
+                <i className="fas fa-search"></i>
+              </div>
             </div>
-            <h3>🔐 Checking Biometric Setup</h3>
+            <h3>
+              <i className="fas fa-fingerprint"></i>
+              Checking Biometric Setup
+            </h3>
             <p>Looking for registered biometric credentials...</p>
           </>
         )
@@ -213,19 +213,34 @@ const BiometricLogin = ({ onLogin, onCancel }) => {
         return (
           <>
             <div className="biometric-icon">
-              <div className="fingerprint-animation">👆</div>
+              <div className="fingerprint-animation biometric-prompt">
+                <i className="fas fa-fingerprint"></i>
+              </div>
             </div>
-            <h3>🔐 Biometric Authentication</h3>
+            <h3>
+              <i className="fas fa-hand-paper"></i>
+              Biometric Authentication
+            </h3>
             <p>
               <strong>Please use your fingerprint, face, or device authentication now!</strong>
             </p>
             <div className="biometric-status">
               <p>
-                ✨ <strong>Ready for authentication</strong>
+                <i className="fas fa-magic"></i>
+                <strong>Ready for authentication</strong>
               </p>
-              <p>👆 Touch your fingerprint sensor</p>
-              <p>👤 Use face recognition if available</p>
-              <p>🔢 Enter device PIN if prompted</p>
+              <p>
+                <i className="fas fa-fingerprint"></i>
+                Touch your fingerprint sensor
+              </p>
+              <p>
+                <i className="fas fa-user-circle"></i>
+                Use face recognition if available
+              </p>
+              <p>
+                <i className="fas fa-keyboard"></i>
+                Enter device PIN if prompted
+              </p>
             </div>
           </>
         )
@@ -234,9 +249,14 @@ const BiometricLogin = ({ onLogin, onCancel }) => {
         return (
           <>
             <div className="biometric-icon">
-              <div className="fingerprint-animation">⚡</div>
+              <div className="fingerprint-animation verifying">
+                <i className="fas fa-sync-alt"></i>
+              </div>
             </div>
-            <h3>🔐 Verifying Authentication</h3>
+            <h3>
+              <i className="fas fa-shield-alt"></i>
+              Verifying Authentication
+            </h3>
             <p>Processing your biometric data...</p>
           </>
         )
@@ -245,9 +265,12 @@ const BiometricLogin = ({ onLogin, onCancel }) => {
         return (
           <>
             <div className="biometric-icon">
-              <div className="fingerprint-animation">✅</div>
+              <div className="success-tick"></div>
             </div>
-            <h3>🎉 Authentication Successful!</h3>
+            <h3>
+              <i className="fas fa-check-circle"></i>
+              Authentication Successful!
+            </h3>
             <p>Logging you in...</p>
           </>
         )
@@ -256,11 +279,21 @@ const BiometricLogin = ({ onLogin, onCancel }) => {
         return (
           <>
             <div className="biometric-icon">
-              <div className="fingerprint-animation">❌</div>
+              <div className="fingerprint-animation error">
+                <i className="fas fa-exclamation-triangle"></i>
+              </div>
             </div>
-            <h3>🔐 Authentication Failed</h3>
+            <h3>
+              <i className="fas fa-times-circle"></i>
+              Authentication Failed
+            </h3>
             <p>Unable to authenticate with biometrics</p>
-            {error && <div className="error-message">{error}</div>}
+            {error && (
+              <div className="error-message">
+                <i className="fas fa-exclamation-circle"></i>
+                {error}
+              </div>
+            )}
           </>
         )
 
@@ -268,9 +301,14 @@ const BiometricLogin = ({ onLogin, onCancel }) => {
         return (
           <>
             <div className="biometric-icon">
-              <div className="fingerprint-animation">👆</div>
+              <div className="fingerprint-animation">
+                <i className="fas fa-fingerprint"></i>
+              </div>
             </div>
-            <h3>🔐 Biometric Authentication</h3>
+            <h3>
+              <i className="fas fa-fingerprint"></i>
+              Biometric Authentication
+            </h3>
             <p>Please use your biometric authentication</p>
           </>
         )
@@ -285,29 +323,42 @@ const BiometricLogin = ({ onLogin, onCancel }) => {
         <div className="biometric-actions">
           {step === "error" && (
             <button onClick={retryBiometric} className="btn btn-primary" disabled={loading}>
-              {loading ? "⏳ Preparing..." : "🔄 Try Again"}
+              {loading ? (
+                <>
+                  <i className="fas fa-spinner fa-spin"></i>
+                  Preparing...
+                </>
+              ) : (
+                <>
+                  <i className="fas fa-redo"></i>
+                  Try Again
+                </>
+              )}
             </button>
           )}
           <button onClick={onCancel} className="btn btn-secondary">
-            ← Back to Password Login
+            <i className="fas fa-arrow-left"></i>
+            Back to Password Login
           </button>
         </div>
 
         <div className="biometric-help">
           <p>
-            💡 <strong>Instant Biometric Login:</strong>
+            <i className="fas fa-lightbulb"></i>
+            <strong>Instant Biometric Login:</strong>
           </p>
           <ul>
-            <li>✨ No username required</li>
-            <li>👆 Just use your biometric</li>
-            <li>🚀 Automatic user identification</li>
-            <li>⚡ Fastest login method</li>
+            <li>No username required</li>
+            <li>Just use your biometric</li>
+            <li>Automatic user identification</li>
+            <li>Fastest login method</li>
           </ul>
 
           {step === "error" && (
             <div className="troubleshoot-section">
               <p>
-                🔧 <strong>Troubleshooting:</strong>
+                <i className="fas fa-tools"></i>
+                <strong>Troubleshooting:</strong>
               </p>
               <ul>
                 <li>Ensure biometric is setup in Settings</li>

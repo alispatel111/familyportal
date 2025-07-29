@@ -1,11 +1,14 @@
 "use client"
 
+import "../styles/cards.css"
+import "../styles/buttons.css"
+
 const DocumentCard = ({ document, onDelete, showUser = false }) => {
   const getFileIcon = (mimeType) => {
-    if (mimeType?.includes("pdf")) return "📄"
-    if (mimeType?.includes("image")) return "🖼️"
-    if (mimeType?.includes("document")) return "📝" // For DOCX
-    return "📎" // Default icon
+    if (mimeType?.includes("pdf")) return "fas fa-file-pdf"
+    if (mimeType?.includes("image")) return "fas fa-file-image"
+    if (mimeType?.includes("document")) return "fas fa-file-word"
+    return "fas fa-file"
   }
 
   const formatFileSize = (bytes) => {
@@ -15,7 +18,14 @@ const DocumentCard = ({ document, onDelete, showUser = false }) => {
     return Math.round((bytes / Math.pow(1024, i)) * 100) / 100 + " " + sizes[i]
   }
 
-  // Function to handle viewing the document (opens in new tab)
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    })
+  }
+
   const handleView = () => {
     console.log("=== VIEW BUTTON CLICKED ===")
     console.log("Document ID:", document._id)
@@ -23,11 +33,12 @@ const DocumentCard = ({ document, onDelete, showUser = false }) => {
 
     if (!document.fileUrl) {
       console.error("❌ ERROR: document.fileUrl is missing!")
-      alert("Document URL is missing. Cannot view file.")
+      if (window.showToast) {
+        window.showToast("error", "Error", "Document URL is missing. Cannot view file.")
+      }
       return
     }
 
-    // For local storage, just open the URL directly
     console.log("✅ Opening view URL:", document.fileUrl)
     window.open(document.fileUrl, "_blank")
   }
@@ -40,22 +51,21 @@ const DocumentCard = ({ document, onDelete, showUser = false }) => {
 
     if (!document.fileUrl) {
       console.error("❌ ERROR: document.fileUrl is missing!")
-      alert("Document URL is missing. Cannot download file.")
+      if (window.showToast) {
+        window.showToast("error", "Error", "Document URL is missing. Cannot download file.")
+      }
       return
     }
 
-    // Check if we're in browser environment
     if (typeof window === "undefined") {
       console.error("❌ Not in browser environment")
       return
     }
 
-    // Create download URL
     const downloadUrl = `${document.fileUrl}?download=true`
     console.log("🚀 Download URL:", downloadUrl)
 
     try {
-      // Method 1: Try creating a download link using window.document
       if (typeof window.document !== "undefined" && window.document.body) {
         console.log("📎 Using window.document.body method")
         const link = window.document.createElement("a")
@@ -64,63 +74,23 @@ const DocumentCard = ({ document, onDelete, showUser = false }) => {
         link.target = "_blank"
         link.style.display = "none"
 
-        // Add to DOM, click, and remove
         window.document.body.appendChild(link)
         link.click()
         window.document.body.removeChild(link)
 
         console.log("✅ Download initiated successfully")
+
+        if (window.showToast) {
+          window.showToast("success", "Download Started", `Downloading ${document.originalName}`)
+        }
         return
       } else {
         throw new Error("window.document.body not available")
       }
     } catch (error) {
-      console.error("❌ Method 1 failed:", error)
-
-      try {
-        // Method 2: Direct window.open with download URL
-        console.log("🔄 Using window.open method")
-        const newWindow = window.open(downloadUrl, "_blank")
-
-        if (newWindow) {
-          console.log("✅ Download window opened")
-          return
-        } else {
-          throw new Error("Popup blocked or failed")
-        }
-      } catch (error2) {
-        console.error("❌ Method 2 failed:", error2)
-
-        try {
-          // Method 3: Create invisible iframe for download
-          console.log("🔄 Using iframe method")
-          const iframe = window.document.createElement("iframe")
-          iframe.style.display = "none"
-          iframe.src = downloadUrl
-          window.document.body.appendChild(iframe)
-
-          // Remove iframe after 5 seconds
-          setTimeout(() => {
-            if (window.document.body.contains(iframe)) {
-              window.document.body.removeChild(iframe)
-            }
-          }, 5000)
-
-          console.log("✅ Download initiated via iframe")
-          return
-        } catch (error3) {
-          console.error("❌ Method 3 failed:", error3)
-
-          try {
-            // Method 4: Location assignment as final fallback
-            console.log("🔄 Using location assignment method")
-            window.location.href = downloadUrl
-            console.log("✅ Download initiated via location")
-          } catch (error4) {
-            console.error("❌ All download methods failed:", error4)
-            alert("Download failed. Please try again or contact support.")
-          }
-        }
+      console.error("❌ Download failed:", error)
+      if (window.showToast) {
+        window.showToast("error", "Download Failed", "Unable to download file. Please try again.")
       }
     }
   }
@@ -139,31 +109,47 @@ const DocumentCard = ({ document, onDelete, showUser = false }) => {
 
   return (
     <div className="document-card">
-      <div className="document-icon">{getFileIcon(document.mimeType)}</div>
+      <div className="document-icon">
+        <i className={getFileIcon(document.mimeType)}></i>
+      </div>
 
       <div className="document-info">
-        <h3 className="document-name">{document.originalName}</h3>
-        <p className="document-category">{document.category}</p>
-        {showUser && <p className="document-user">Uploaded by: {document.uploadedBy.fullName}</p>}
-        <p className="document-date">{new Date(document.uploadDate).toLocaleDateString()}</p>
-        <p className="document-size">{formatFileSize(document.fileSize)}</p>
+        <h3>{document.originalName}</h3>
+        <div className="document-category">
+          <i className="fas fa-tag"></i>
+          {document.category}
+        </div>
 
-        {/* Debug info - remove in production */}
-        <div style={{ fontSize: "10px", color: "#666", marginTop: "5px" }}>
-          <p>🔒 Secure Local Storage</p>
-          <p>URL: {document.fileUrl ? "✅ Present" : "❌ Missing"}</p>
+        <div className="document-meta">
+          {showUser && (
+            <div className="document-meta-item">
+              <i className="fas fa-user"></i>
+              {document.uploadedBy.fullName}
+            </div>
+          )}
+          <div className="document-meta-item">
+            <i className="fas fa-calendar"></i>
+            {formatDate(document.uploadDate)}
+          </div>
+          <div className="document-meta-item">
+            <i className="fas fa-weight-hanging"></i>
+            {formatFileSize(document.fileSize)}
+          </div>
         </div>
       </div>
 
       <div className="document-actions">
         <button onClick={handleView} className="btn btn-sm btn-primary">
-          👁️ View
+          <i className="fas fa-eye"></i>
+          View
         </button>
-        <button onClick={handleDownload} className="btn btn-sm btn-outline">
-          ⬇️ Download
+        <button onClick={handleDownload} className="btn btn-sm btn-secondary">
+          <i className="fas fa-download"></i>
+          Download
         </button>
         <button onClick={handleDelete} className="btn btn-sm btn-danger">
-          🗑️ Delete
+          <i className="fas fa-trash"></i>
+          Delete
         </button>
       </div>
     </div>

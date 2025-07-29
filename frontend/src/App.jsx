@@ -13,6 +13,7 @@ import AdminPanel from "./pages/AdminPanel"
 import BiometricSettings from "./pages/BiometricSettings"
 import LoadingSpinner from "./components/LoadingSpinner"
 import ErrorBoundary from "./components/ErrorBoundary"
+import ToastContainer from "./components/ToastContainer"
 import "./App.css"
 
 function App() {
@@ -48,6 +49,8 @@ function App() {
     console.log("✅ User logged in:", userData)
     setUser(userData)
     setError(null)
+
+    // Don't show toast here as it's already shown in Login component
   }
 
   const handleLogout = async () => {
@@ -55,6 +58,11 @@ function App() {
       await axios.post("/api/auth/logout")
       setUser(null)
       console.log("✅ User logged out")
+
+      // Show logout toast
+      if (window.showToast) {
+        window.showToast("info", "Logged out", "You have been successfully logged out.")
+      }
     } catch (error) {
       console.error("❌ Logout error:", error)
       // Force logout on client side even if server request fails
@@ -70,10 +78,12 @@ function App() {
     return (
       <div className="error-container">
         <div className="error-message">
-          <h2>🚨 Connection Error</h2>
+          <h2>
+            <i className="fas fa-exclamation-triangle"></i> Connection Error
+          </h2>
           <p>{error}</p>
           <button onClick={() => window.location.reload()} className="btn btn-primary">
-            🔄 Retry
+            <i className="fas fa-redo"></i> Retry
           </button>
         </div>
       </div>
@@ -103,6 +113,7 @@ function App() {
               <Route path="/" element={user ? <Navigate to="/dashboard" /> : <Navigate to="/login" />} />
             </Routes>
           </main>
+          <ToastContainer />
         </div>
       </Router>
     </ErrorBoundary>

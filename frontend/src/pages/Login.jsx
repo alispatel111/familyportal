@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { Link } from "react-router-dom"
 import axios from "axios"
 import BiometricLogin from "../components/BiometricLogin"
+import "../styles/auth.css"
 
 const Login = ({ onLogin }) => {
   const [formData, setFormData] = useState({
@@ -17,7 +18,6 @@ const Login = ({ onLogin }) => {
   const [biometricAvailable, setBiometricAvailable] = useState(false)
   const [biometricUsersCount, setBiometricUsersCount] = useState(0)
 
-  // Check biometric support on component mount
   useEffect(() => {
     checkBiometricSupport()
   }, [])
@@ -26,18 +26,15 @@ const Login = ({ onLogin }) => {
     try {
       console.log("🔍 Checking biometric support...")
 
-      // Check if WebAuthn is supported
       const supported = !!(navigator.credentials && navigator.credentials.create)
       setBiometricSupported(supported)
       console.log("🔐 WebAuthn supported:", supported)
 
       if (supported && window.PublicKeyCredential) {
-        // Check if platform authenticator is available
         const available = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()
         setBiometricAvailable(available)
         console.log("👆 Platform authenticator available:", available)
 
-        // Check if any users have biometric enabled
         if (available) {
           try {
             const response = await axios.get("/api/auth/biometric/check-availability")
@@ -62,6 +59,8 @@ const Login = ({ onLogin }) => {
       ...formData,
       [e.target.name]: e.target.value,
     })
+    // Clear error when user starts typing
+    if (error) setError("")
   }
 
   const handleSubmit = async (e) => {
@@ -71,9 +70,22 @@ const Login = ({ onLogin }) => {
 
     try {
       const response = await axios.post("/api/auth/login", formData)
+
+      // Show success toast only once
+      if (window.showToast) {
+        window.showToast("success", "Login Successful!", `Welcome back, ${response.data.user.fullName}!`)
+      }
+
+      // Call onLogin after showing toast
       onLogin(response.data.user)
     } catch (error) {
-      setError(error.response?.data?.message || "Login failed")
+      const errorMessage = error.response?.data?.message || "Login failed"
+      setError(errorMessage)
+
+      // Show error toast only once
+      if (window.showToast) {
+        window.showToast("error", "Login Failed", errorMessage)
+      }
     } finally {
       setLoading(false)
     }
@@ -81,6 +93,13 @@ const Login = ({ onLogin }) => {
 
   const handleBiometricLogin = (userData) => {
     console.log("✅ Biometric login successful:", userData)
+
+    // Show success toast only once
+    if (window.showToast) {
+      window.showToast("success", "Biometric Login Successful!", `Welcome back, ${userData.fullName}!`)
+    }
+
+    // Call onLogin after showing toast
     onLogin(userData)
   }
 
@@ -96,10 +115,14 @@ const Login = ({ onLogin }) => {
     setShowBiometric(true)
   }
 
-  // Show biometric login component
   if (showBiometric) {
     return (
       <div className="auth-container">
+        <div className="decorative-shapes">
+          <div className="shape circle"></div>
+          <div className="shape triangle"></div>
+          <div className="shape square"></div>
+        </div>
         <div className="auth-card">
           <BiometricLogin onLogin={handleBiometricLogin} onCancel={handleBiometricCancel} />
         </div>
@@ -107,84 +130,127 @@ const Login = ({ onLogin }) => {
     )
   }
 
-  // Check if biometric login should be available
   const showBiometricButton = biometricSupported && biometricAvailable && biometricUsersCount > 0
 
   return (
     <div className="auth-container">
+      <div className="decorative-shapes">
+        <div className="shape circle"></div>
+        <div className="shape triangle"></div>
+        <div className="shape square"></div>
+      </div>
+
       <div className="auth-card">
-        <div className="auth-header">
-          <h1>📁 Family Document Portal</h1>
-          <h2>Welcome Back</h2>
-          <p>Sign in to access your documents</p>
+        <div className="auth-left">
+          <div className="auth-avatar">
+            <i className="fas fa-user"></i>
+          </div>
+          <div className="auth-brand">
+            <h1>Family Document Portal</h1>
+            <p>Secure • Organized • Accessible</p>
+          </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="auth-form">
-          {error && <div className="error-message">{error}</div>}
-
-          <div className="form-group">
-            <label htmlFor="username">Username or Email</label>
-            <input
-              type="text"
-              id="username"
-              name="username"
-              value={formData.username}
-              onChange={handleChange}
-              required
-              placeholder="Enter your username or email"
-            />
+        <div className="auth-right">
+          <div className="auth-header">
+            <h2>Member Login</h2>
+            <p>Welcome back! Please sign in to your account</p>
           </div>
 
-          <div className="form-group">
-            <label htmlFor="password">Password</label>
-            <input
-              type="password"
-              id="password"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              required
-              placeholder="Enter your password"
-            />
-          </div>
-
-          <button type="submit" className="btn btn-primary" disabled={loading}>
-            {loading ? "Signing in..." : "Sign In"}
-          </button>
-
-          {showBiometricButton && (
-            <div className="biometric-option">
-              <div className="divider">
-                <span>OR</span>
+          <form onSubmit={handleSubmit} className="auth-form">
+            {error && (
+              <div className="error-message">
+                <i className="fas fa-exclamation-circle"></i>
+                {error}
               </div>
-              <button type="button" onClick={startBiometricLogin} className="btn btn-outline biometric-btn">
-                👆 Login with Biometrics
-              </button>
-              <p className="biometric-note">
-                ✨ <strong>Instant Login:</strong> No username required - just use your fingerprint!
-                <br />👥{" "}
-                <strong>
-                  {biometricUsersCount} user{biometricUsersCount !== 1 ? "s" : ""}
-                </strong>{" "}
-                with biometric enabled
-              </p>
-            </div>
-          )}
+            )}
 
-          {biometricSupported && biometricAvailable && biometricUsersCount === 0 && (
-            <div className="biometric-setup-hint">
-              <p className="setup-hint">
-                💡 <strong>Enable biometric login:</strong> Go to Settings → Biometric after login to setup instant
+            <div className="form-group">
+              <label htmlFor="username">Email</label>
+
+              <input
+                type="text"
+                id="username"
+                name="username"
+                value={formData.username}
+                onChange={handleChange}
+                required
+                placeholder="Enter your email or username"
+                className="form-input-login"
+              />
+              <i className="fas fa-envelope input-icon "></i>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="password">Password</label>
+              <input
+                type="password"
+                id="password"
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                required
+                placeholder="Enter your password"
+                className="form-input-login"
+              />
+              <i className="fas fa-lock input-icon"></i>
+            </div>
+
+            <button type="submit" className={`login-btn ${loading ? "loading" : ""}`} disabled={loading}>
+              {loading ? (
+                <>
+                  <div className="loading-spinner-login"></div>
+                  Signing in...
+                </>
+              ) : (
+                "LOGIN"
+              )}
+            </button>
+
+            <div className="forgot-link">
+              {/* <a href="#" onClick={(e) => e.preventDefault()}>
+                Forgot Username / Password?
+              </a> */}
+            </div>
+
+            {showBiometricButton && (
+              <div className="biometric-option">
+                <div className="divider">
+                  <span>OR</span>
+                </div>
+                <button type="button" onClick={startBiometricLogin} className="biometric-btn">
+                  <i className="fas fa-fingerprint"></i>
+                  Login with Biometrics
+                </button>
+                <div className="biometric-note">
+                  <i className="fas fa-magic"></i>
+                  {/* <strong>Instant Login:</strong> No username required - just use your fingerprint! */}
+                  <br />
+                  <i className="fas fa-users"></i>
+                  <strong>
+                    {biometricUsersCount} user{biometricUsersCount !== 1 ? "s" : ""}
+                  </strong>{" "}
+                  {/* with biometric enabled */}
+                </div>
+              </div>
+            )}
+
+            {biometricSupported && biometricAvailable && biometricUsersCount === 0 && (
+              <div className="setup-hint">
+                <i className="fas fa-lightbulb"></i>
+                <strong>Enable biometric login:</strong> Go to Settings → Biometric after login to setup instant
                 authentication!
-              </p>
-            </div>
-          )}
-        </form>
+              </div>
+            )}
+          </form>
 
-        <div className="auth-footer">
-          <p>
-            Don't have an account? <Link to="/signup">Sign up here</Link>
-          </p>
+          <div className="auth-footer">
+            <p>Don't have an account?</p>
+            <Link to="/signup">
+              <i className="fas fa-user-plus"></i>
+              Create your Account
+            </Link>
+          </div>
         </div>
       </div>
     </div>

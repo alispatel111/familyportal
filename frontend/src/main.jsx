@@ -1,7 +1,9 @@
 import React from "react"
 import ReactDOM from "react-dom/client"
+import "./styles/variables.css"
+import "./App.css"
 import App from "./App.jsx"
-import "./index.css"
+// import "./index.css"
 import axios from "axios"
 
 // Configure axios for production

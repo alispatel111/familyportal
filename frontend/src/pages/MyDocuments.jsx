@@ -1,8 +1,12 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { Link } from "react-router-dom"
 import axios from "axios"
 import DocumentCard from "../components/DocumentCard"
+import "../styles/documents.css"
+import "../styles/buttons.css"
+import "../styles/forms.css"
 
 const MyDocuments = () => {
   const [documents, setDocuments] = useState([])
@@ -40,21 +44,12 @@ const MyDocuments = () => {
       console.log("📊 API Response:", response.data)
       console.log("📄 Documents received:", response.data.documents.length)
 
-      // Log each document
-      response.data.documents.forEach((doc, index) => {
-        console.log(`Document ${index + 1}:`, {
-          id: doc._id,
-          name: doc.originalName,
-          url: doc.fileUrl,
-          category: doc.category,
-          mimeType: doc.mimeType,
-        })
-      })
-
       setDocuments(response.data.documents)
     } catch (error) {
       console.error("❌ Error fetching documents:", error)
-      console.error("Error response:", error.response?.data)
+      if (window.showToast) {
+        window.showToast("error", "Error", "Failed to load documents")
+      }
     } finally {
       setLoading(false)
     }
@@ -82,35 +77,68 @@ const MyDocuments = () => {
     try {
       await axios.delete(`/api/documents/${documentId}`)
       setDocuments(documents.filter((doc) => doc._id !== documentId))
+
+      if (window.showToast) {
+        window.showToast("success", "Document Deleted", "Document has been successfully deleted")
+      }
     } catch (error) {
       console.error("Error deleting document:", error)
+      if (window.showToast) {
+        window.showToast("error", "Delete Failed", "Failed to delete document")
+      }
     }
   }
 
+  const clearSearch = () => {
+    setSearchTerm("")
+  }
+
   if (loading) {
-    return <div className="loading">Loading documents...</div>
+    return (
+      <div className="loading">
+        <i className="fas fa-spinner fa-spin"></i>
+        <p>Loading documents...</p>
+      </div>
+    )
   }
 
   return (
     <div className="my-documents">
       <div className="documents-header">
-        <h1>📋 My Documents</h1>
+        <h1>
+          <i className="fas fa-file-alt"></i>
+          My Documents
+        </h1>
         <p>Manage and organize your uploaded documents</p>
       </div>
 
       <div className="documents-filters">
         <div className="filter-group">
-          <input
-            type="text"
-            placeholder="Search documents..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="search-input"
-          />
+          <label htmlFor="search">
+            <i className="fas fa-search"></i>
+            Search Documents
+          </label>
+          <div className="search-input">
+            <input
+              id="search"
+              type="text"
+              placeholder="Search by name or category..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="form-input"
+            />
+            <i className="fas fa-search search-icon"></i>
+            {searchTerm && <i className="fas fa-times clear-icon" onClick={clearSearch}></i>}
+          </div>
         </div>
 
         <div className="filter-group">
+          <label htmlFor="category">
+            <i className="fas fa-filter"></i>
+            Filter by Category
+          </label>
           <select
+            id="category"
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
             className="category-filter"
@@ -126,6 +154,7 @@ const MyDocuments = () => {
 
       <div className="documents-stats">
         <p>
+          <i className="fas fa-chart-bar"></i>
           Showing {filteredDocuments.length} of {documents.length} documents
         </p>
       </div>
@@ -138,7 +167,19 @@ const MyDocuments = () => {
         </div>
       ) : (
         <div className="empty-state">
-          <p>No documents found matching your criteria.</p>
+          <i className="fas fa-search"></i>
+          <h3>No Documents Found</h3>
+          <p>
+            {searchTerm || selectedCategory
+              ? "No documents match your search criteria. Try adjusting your filters."
+              : "You haven't uploaded any documents yet."}
+          </p>
+          {!searchTerm && !selectedCategory && (
+            <Link to="/upload" className="btn btn-primary">
+              <i className="fas fa-plus"></i>
+              Upload your first document
+            </Link>
+          )}
         </div>
       )}
     </div>
