@@ -77,7 +77,7 @@ const Navbar = ({ user, onLogout }) => {
             >
               <span className="relative z-10 flex items-center">
                 <i className="fas fa-sign-out-alt mr-2 transform transition-transform duration-500 hover:rotate-90"></i>
-                Logout
+                <span className="hidden sm:inline">Logout</span>
               </span>
               <span className="absolute inset-0 bg-gradient-to-r from-blue-700 to-blue-900 opacity-0 transition-opacity duration-300 hover:opacity-100"></span>
             </button>
@@ -86,7 +86,7 @@ const Navbar = ({ user, onLogout }) => {
               onClick={toggleMobileMenu}
               data-collapse-toggle="navbar-cta" 
               type="button" 
-              className="inline-flex items-center p-2 w-10 h-10 justify-center text-sm text-gray-500 rounded-lg md:hidden hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-200 dark:text-gray-400 dark:hover:bg-gray-700 dark:focus:ring-gray-600 transition-all duration-300 hover:scale-110" 
+              className="inline-flex items-center p-2 w-10 h-10 justify-center text-sm text-gray-500 rounded-lg md:hidden hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-200 dark:text-gray-400 dark:hover:bg-gray-700 dark:focus:ring-gray-600 transition-all duration-300 hover:scale-110 ml-2" 
               aria-controls="navbar-cta" 
               aria-expanded="false"
             >
@@ -118,10 +118,11 @@ const Navbar = ({ user, onLogout }) => {
                 <li key={item.path} 
                   onMouseEnter={() => setActiveHover(item.path)}
                   onMouseLeave={() => setActiveHover(null)}
+                  className="w-full md:w-auto"
                 >
                   <Link
                     to={item.path}
-                    className={`relative block py-2 px-3 md:p-0 rounded-sm transition-all duration-300 group ${isActive(item.path) 
+                    className={`relative flex py-2 px-3 md:p-0 rounded-sm transition-all duration-300 group ${isActive(item.path) 
                       ? "text-white bg-blue-700 md:bg-transparent md:text-blue-700 md:dark:text-blue-500" 
                       : "text-gray-900 hover:text-blue-700 dark:text-white dark:hover:text-blue-500"
                     }`}
@@ -142,30 +143,32 @@ const Navbar = ({ user, onLogout }) => {
               ))}
               
               {/* Mobile user info */}
-              <li className="md:hidden mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 animate-slideUp">
+              <li className="md:hidden mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 animate-slideUp w-full">
                 <div className="flex items-center space-x-3 p-2 rounded-lg bg-blue-50 dark:bg-blue-900/20 transition-all duration-300 hover:bg-blue-100 dark:hover:bg-blue-900/30">
-                  <div className="relative">
+                  <div className="relative flex-shrink-0">
                     <div className="absolute -inset-1 bg-blue-200 rounded-full opacity-0 transition-opacity duration-300 hover:opacity-30"></div>
                     <i className="fas fa-user text-gray-500 dark:text-gray-400 relative"></i>
                   </div>
-                  <div>
-                    <div className="font-medium text-gray-900 dark:text-white">
+                  <div className="min-w-0 flex-1">
+                    <div className="font-medium text-gray-900 dark:text-white truncate">
                       {user.fullName}
                     </div>
-                    <div className="text-sm text-gray-500 dark:text-gray-400">
+                    <div className="text-sm text-gray-500 dark:text-gray-400 truncate">
                       {user.role === "admin" ? "Administrator" : "Family Member"}
                     </div>
                   </div>
-                  {user.role === "admin" && (
-                    <span className="rounded-full bg-gradient-to-r from-blue-600 to-blue-800 px-2 py-0.5 text-xs font-semibold text-white shadow-sm ml-auto">
-                      Admin
-                    </span>
-                  )}
-                  {user.biometricEnabled && (
-                    <span className="text-blue-700 dark:text-blue-600">
-                      <i className="fas fa-fingerprint"></i>
-                    </span>
-                  )}
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    {user.role === "admin" && (
+                      <span className="rounded-full bg-gradient-to-r from-blue-600 to-blue-800 px-2 py-0.5 text-xs font-semibold text-white shadow-sm">
+                        Admin
+                      </span>
+                    )}
+                    {user.biometricEnabled && (
+                      <span className="text-blue-700 dark:text-blue-600">
+                        <i className="fas fa-fingerprint"></i>
+                      </span>
+                    )}
+                  </div>
                 </div>
               </li>
             </ul>
