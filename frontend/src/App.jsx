@@ -14,7 +14,7 @@ import BiometricSettings from "./pages/BiometricSettings"
 import LoadingSpinner from "./components/LoadingSpinner"
 import ErrorBoundary from "./components/ErrorBoundary"
 import ToastContainer from "./components/ToastContainer"
-import "./App.css"
+// Removed: import "./App.css"
 
 function App() {
   const [user, setUser] = useState(null)
@@ -76,13 +76,17 @@ function App() {
 
   if (error) {
     return (
-      <div className="error-container">
-        <div className="error-message">
-          <h2>
-            <i className="fas fa-exclamation-triangle"></i> Connection Error
+      <div className="min-h-screen grid place-items-center bg-gray-50">
+        <div className="max-w-md w-full rounded-2xl border border-red-200 bg-white p-6 shadow">
+          <h2 className="mb-2 flex items-center gap-2 text-lg font-semibold text-red-600">
+            <i className="fas fa-exclamation-triangle"></i>
+            Connection Error
           </h2>
-          <p>{error}</p>
-          <button onClick={() => window.location.reload()} className="btn btn-primary">
+          <p className="mb-4 text-sm text-gray-600">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="inline-flex items-center gap-2 rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+          >
             <i className="fas fa-redo"></i> Retry
           </button>
         </div>
@@ -95,7 +99,7 @@ function App() {
       <Router>
         <div className="App">
           {user && <Navbar user={user} onLogout={handleLogout} />}
-          <main className="main-content">
+          <main className="mx-auto w-full max-w-7xl px-4 py-6">
             <Routes>
               <Route path="/login" element={!user ? <Login onLogin={handleLogin} /> : <Navigate to="/dashboard" />} />
               <Route path="/signup" element={!user ? <Signup onLogin={handleLogin} /> : <Navigate to="/dashboard" />} />

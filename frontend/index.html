@@ -8,11 +8,37 @@
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Tailwind CSS -->
+    <script>
+      window.tailwind = window.tailwind || {}
+      window.tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              brand: {
+                DEFAULT: "#2563eb", // blue-600
+                hover: "#1d4ed8",   // blue-700
+                subtle: "#eff6ff",  // blue-50
+              },
+            },
+            borderRadius: {
+              xl: "0.75rem",
+              "2xl": "1rem",
+            }
+            // boxShadow: {
+            //   card: "0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)",
+            //   cardHover: "0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05)",
+            // },
+          },
+        },
+      }
+    </script>
+    <script src="https://cdn.tailwindcss.com"></script>
   </head>
-  <body>
+  <body class="">
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>

@@ -1,10 +1,8 @@
 import React from "react"
 import ReactDOM from "react-dom/client"
-import "./styles/variables.css"
-import "./App.css"
 import App from "./App.jsx"
-// import "./index.css"
 import axios from "axios"
+import './index.css'
 
 // Configure axios for production
 axios.defaults.withCredentials = true

@@ -1,9 +1,11 @@
 "use client"
 
-import "../styles/cards.css"
-import "../styles/buttons.css"
+import { useState } from 'react';
 
 const DocumentCard = ({ document, onDelete, showUser = false }) => {
+  const [isHovered, setIsHovered] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   const getFileIcon = (mimeType) => {
     if (mimeType?.includes("pdf")) return "fas fa-file-pdf"
     if (mimeType?.includes("image")) return "fas fa-file-image"
@@ -26,11 +28,33 @@ const DocumentCard = ({ document, onDelete, showUser = false }) => {
     })
   }
 
-  const handleView = () => {
-    console.log("=== VIEW BUTTON CLICKED ===")
-    console.log("Document ID:", document._id)
-    console.log("File URL:", document.fileUrl)
+  const getCategoryStyle = (category) => {
+    const styles = {
+      "pan card": {
+        bg: "linear-gradient(to right, rgba(239, 68, 68, 0.15), rgba(249, 115, 22, 0.15))",
+        text: "text-red-700",
+        icon: "fas fa-id-card",
+        iconColor: "text-red-500"
+      },
+      "insurance": {
+        bg: "linear-gradient(to right, rgba(34, 197, 94, 0.15), rgba(101, 163, 13, 0.15))",
+        text: "text-green-700",
+        icon: "fas fa-shield-alt",
+        iconColor: "text-green-500"
+      },
+      "default": {
+        bg: "linear-gradient(to right, rgba(99, 102, 241, 0.15), rgba(6, 182, 212, 0.15))",
+        text: "text-indigo-700",
+        icon: "fas fa-tag",
+        iconColor: "text-indigo-500"
+      }
+    };
+    
+    const normalizedCategory = category?.toLowerCase() || "";
+    return styles[normalizedCategory] || styles.default;
+  }
 
+  const handleView = () => {
     if (!document.fileUrl) {
       console.error("❌ ERROR: document.fileUrl is missing!")
       if (window.showToast) {
@@ -38,17 +62,10 @@ const DocumentCard = ({ document, onDelete, showUser = false }) => {
       }
       return
     }
-
-    console.log("✅ Opening view URL:", document.fileUrl)
     window.open(document.fileUrl, "_blank")
   }
 
   const handleDownload = () => {
-    console.log("=== DOWNLOAD BUTTON CLICKED ===")
-    console.log("Document ID:", document._id)
-    console.log("Original filename:", document.originalName)
-    console.log("File URL:", document.fileUrl)
-
     if (!document.fileUrl) {
       console.error("❌ ERROR: document.fileUrl is missing!")
       if (window.showToast) {
@@ -57,35 +74,21 @@ const DocumentCard = ({ document, onDelete, showUser = false }) => {
       return
     }
 
-    if (typeof window === "undefined") {
-      console.error("❌ Not in browser environment")
-      return
-    }
-
     const downloadUrl = `${document.fileUrl}?download=true`
-    console.log("🚀 Download URL:", downloadUrl)
-
+    
     try {
-      if (typeof window.document !== "undefined" && window.document.body) {
-        console.log("📎 Using window.document.body method")
-        const link = window.document.createElement("a")
-        link.href = downloadUrl
-        link.download = document.originalName
-        link.target = "_blank"
-        link.style.display = "none"
+      const link = document.createElement("a")
+      link.href = downloadUrl
+      link.download = document.originalName
+      link.target = "_blank"
+      link.style.display = "none"
 
-        window.document.body.appendChild(link)
-        link.click()
-        window.document.body.removeChild(link)
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
 
-        console.log("✅ Download initiated successfully")
-
-        if (window.showToast) {
-          window.showToast("success", "Download Started", `Downloading ${document.originalName}`)
-        }
-        return
-      } else {
-        throw new Error("window.document.body not available")
+      if (window.showToast) {
+        window.showToast("success", "Download Started", `Downloading ${document.originalName}`)
       }
     } catch (error) {
       console.error("❌ Download failed:", error)
@@ -96,62 +99,143 @@ const DocumentCard = ({ document, onDelete, showUser = false }) => {
   }
 
   const handleDelete = () => {
-    console.log("=== DELETE BUTTON CLICKED ===")
-    console.log("Document ID:", document._id)
-
     if (window.confirm(`Are you sure you want to delete "${document.originalName}"?`)) {
-      console.log("🗑️ User confirmed deletion")
-      onDelete(document._id)
-    } else {
-      console.log("❌ User cancelled deletion")
+      setIsDeleting(true);
+      setTimeout(() => {
+        onDelete(document._id);
+      }, 300);
     }
   }
 
-  return (
-    <div className="document-card">
-      <div className="document-icon">
-        <i className={getFileIcon(document.mimeType)}></i>
-      </div>
+  const categoryStyle = getCategoryStyle(document.category);
 
-      <div className="document-info">
-        <h3>{document.originalName}</h3>
-        <div className="document-category">
-          <i className="fas fa-tag"></i>
-          {document.category}
+  return (
+    <div 
+      className={`relative overflow-hidden rounded-xl bg-white p-4 shadow-lg transition-all duration-500 ${isHovered ? 'shadow-xl -translate-y-1' : 'shadow-md'} ${isDeleting ? 'opacity-0 scale-95' : 'opacity-100 scale-100'} w-full h-full`}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      style={{
+        background: 'linear-gradient(to bottom right, #f0f9ff, #e0f2fe, #faf5ff)',
+        border: '1px solid rgba(229, 231, 235, 0.8)'
+      }}
+    >
+      {/* Animated background effect */}
+      <div 
+        className="absolute inset-0 opacity-0 transition-opacity duration-500"
+        style={{
+          background: 'linear-gradient(to right, #818cf8, #06b6d4, #a855f7)',
+          opacity: isHovered ? 0.05 : 0
+        }}
+      ></div>
+      
+      {/* Floating particles animation */}
+      {isHovered && (
+        <>
+          <div className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-indigo-400 opacity-70 animate-ping"></div>
+          <div className="absolute -bottom-1 -left-1 w-2 h-2 rounded-full bg-cyan-400 opacity-70 animate-ping" style={{animationDelay: '0.2s'}}></div>
+        </>
+      )}
+      
+      <div className="relative flex flex-col h-full">
+        <div className="flex items-start gap-3 flex-grow">
+          {/* File icon with enhanced animation */}
+          <div className="flex-shrink-0">
+            <div 
+              className={`flex h-12 w-12 items-center justify-center rounded-lg text-white shadow-md transition-all duration-500 ${isHovered ? 'scale-110 rotate-3' : 'scale-100 rotate-0'}`}
+              style={{
+                background: 'linear-gradient(to right, #6366f1, #06b6d4)',
+                boxShadow: isHovered ? '0 8px 20px -5px rgba(99, 102, 241, 0.4), 0 4px 8px -5px rgba(6, 182, 212, 0.4)' : '0 4px 6px -1px rgba(99, 102, 241, 0.3), 0 2px 4px -1px rgba(6, 182, 212, 0.3)'
+              }}
+            >
+              <i className={`${getFileIcon(document.mimeType)} text-lg`}></i>
+            </div>
+          </div>
+
+          <div className="flex-1 min-w-0">
+            <h3 className="text-base font-bold text-gray-800 transition-all duration-500 line-clamp-2 leading-tight">
+              {document.originalName}
+            </h3>
+            
+            <div 
+              className="mt-1.5 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium transition-all duration-500"
+              style={{ background: categoryStyle.bg }}
+            >
+              <i className={`${categoryStyle.icon} ${categoryStyle.iconColor} text-xs`}></i>
+              <span className={categoryStyle.text}>
+                {document.category || "Document"}
+              </span>
+            </div>
+
+            <div className="mt-2.5 flex flex-wrap gap-2 text-xs text-gray-600">
+              {showUser && document.uploadedBy && (
+                <div className="inline-flex items-center gap-1 transition-all duration-300 hover:text-gray-800">
+                  <i className="fas fa-user text-gray-500 text-xs"></i>
+                  <span className="truncate max-w-[80px]">{document.uploadedBy.fullName}</span>
+                </div>
+              )}
+              <div className="inline-flex items-center gap-1 transition-all duration-300 hover:text-gray-800">
+                <i className="fas fa-calendar text-gray-500 text-xs"></i>
+                {formatDate(document.uploadDate)}
+              </div>
+              <div className="inline-flex items-center gap-1 transition-all duration-300 hover:text-gray-800">
+                <i className="fas fa-weight-hanging text-gray-500 text-xs"></i>
+                {formatFileSize(document.fileSize)}
+              </div>
+            </div>
+          </div>
         </div>
 
-        <div className="document-meta">
-          {showUser && (
-            <div className="document-meta-item">
-              <i className="fas fa-user"></i>
-              {document.uploadedBy.fullName}
-            </div>
-          )}
-          <div className="document-meta-item">
-            <i className="fas fa-calendar"></i>
+        {/* Horizontal action buttons - positioned at bottom */}
+        <div className="flex justify-between items-center mt-3 pt-3 border-t border-gray-100">
+          <div className="text-xs text-gray-500">
             {formatDate(document.uploadDate)}
           </div>
-          <div className="document-meta-item">
-            <i className="fas fa-weight-hanging"></i>
-            {formatFileSize(document.fileSize)}
+          
+          <div className="flex gap-2">
+            <button
+              onClick={handleView}
+              className="group flex items-center justify-center rounded-lg p-2.5 text-white shadow-md transition-all duration-300 hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+              style={{
+                background: 'linear-gradient(to right, #6366f1, #06b6d4)',
+                boxShadow: '0 3px 5px -1px rgba(99, 102, 241, 0.4), 0 1px 3px -1px rgba(6, 182, 212, 0.4)'
+              }}
+              title="View document"
+            >
+              <i className="fas fa-eye text-sm"></i>
+            </button>
+            <button
+              onClick={handleDownload}
+              className="group flex items-center justify-center rounded-lg border border-gray-300 bg-white p-2.5 text-gray-700 shadow-sm transition-all duration-300 hover:scale-110 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+              style={{
+                boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)'
+              }}
+              title="Download document"
+            >
+              <i className="fas fa-download text-sm"></i>
+            </button>
+            <button
+              onClick={handleDelete}
+              className="group flex items-center justify-center rounded-lg p-2.5 text-white shadow-md transition-all duration-300 hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+              style={{
+                background: 'linear-gradient(to right, #EF4444, #DC2626)',
+                boxShadow: '0 3px 5px -1px rgba(239, 68, 68, 0.4), 0 1px 3px -1px rgba(220, 38, 38, 0.4)'
+              }}
+              title="Delete document"
+            >
+              <i className="fas fa-trash text-sm"></i>
+            </button>
           </div>
         </div>
       </div>
-
-      <div className="document-actions">
-        <button onClick={handleView} className="btn btn-sm btn-primary">
-          <i className="fas fa-eye"></i>
-          View
-        </button>
-        <button onClick={handleDownload} className="btn btn-sm btn-secondary">
-          <i className="fas fa-download"></i>
-          Download
-        </button>
-        <button onClick={handleDelete} className="btn btn-sm btn-danger">
-          <i className="fas fa-trash"></i>
-          Delete
-        </button>
-      </div>
+      
+      {/* Animated border on hover */}
+      <div 
+        className="absolute inset-0 rounded-xl pointer-events-none transition-all duration-700"
+        style={{
+          opacity: isHovered ? 1 : 0,
+          boxShadow: '0 0 0 2px rgba(99, 102, 241, 0.2) inset'
+        }}
+      ></div>
     </div>
   )
 }

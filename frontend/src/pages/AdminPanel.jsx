@@ -22,7 +22,6 @@ const AdminPanel = () => {
         axios.get("/api/documents"),
         axios.get("/api/admin/stats"),
       ])
-
       setUsers(usersRes.data.users)
       setDocuments(documentsRes.data.documents)
       setStats(statsRes.data)
@@ -43,62 +42,77 @@ const AdminPanel = () => {
   }
 
   if (loading) {
-    return <div className="loading">Loading admin panel...</div>
+    return (
+      <div className="grid min-h-[60vh] place-items-center">
+        <div className="flex items-center gap-2 text-gray-600">
+          <i className="fas fa-spinner fa-spin"></i>
+          <p>Loading admin panel...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
-    <div className="admin-panel">
-      <div className="admin-header">
-        <h1>⚙️ Admin Panel</h1>
-        <p>Manage users and documents across the family portal</p>
+    <div className="space-y-6">
+      <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-card">
+        <h1 className="text-balance text-2xl font-semibold text-gray-900">⚙️ Admin Panel</h1>
+        <p className="mt-1 text-sm text-gray-500">Manage users and documents across the family portal</p>
       </div>
 
-      <div className="admin-tabs">
-        <button
-          className={activeTab === "overview" ? "tab-button active" : "tab-button"}
-          onClick={() => setActiveTab("overview")}
-        >
-          Overview
-        </button>
-        <button
-          className={activeTab === "users" ? "tab-button active" : "tab-button"}
-          onClick={() => setActiveTab("users")}
-        >
-          Users ({users.length})
-        </button>
-        <button
-          className={activeTab === "documents" ? "tab-button active" : "tab-button"}
-          onClick={() => setActiveTab("documents")}
-        >
-          All Documents ({documents.length})
-        </button>
+      <div className="flex flex-wrap gap-2">
+        {["overview", "users", "documents"].map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={`inline-flex items-center rounded-lg px-4 py-2 text-sm font-medium transition ${
+              activeTab === tab
+                ? "bg-brand text-white"
+                : "border border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
+            }`}
+          >
+            {tab === "overview" && "Overview"}
+            {tab === "users" && `Users (${users.length})`}
+            {tab === "documents" && `All Documents (${documents.length})`}
+          </button>
+        ))}
       </div>
 
-      <div className="admin-content">
+      <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-card">
         {activeTab === "overview" && (
-          <div className="overview-tab">
-            <div className="stats-grid">
-              <div className="stat-card">
-                <h3>Total Users</h3>
-                <div className="stat-number">{stats.totalUsers}</div>
+          <div className="space-y-6">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-card">
+                <div className="mb-2 inline-flex h-10 w-10 items-center justify-center rounded-lg bg-brand/10 text-brand">
+                  <i className="fas fa-users"></i>
+                </div>
+                <h3 className="text-sm font-medium text-gray-500">Total Users</h3>
+                <div className="text-2xl font-semibold text-gray-900">{stats.totalUsers}</div>
               </div>
-              <div className="stat-card">
-                <h3>Total Documents</h3>
-                <div className="stat-number">{stats.totalDocuments}</div>
+              <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-card">
+                <div className="mb-2 inline-flex h-10 w-10 items-center justify-center rounded-lg bg-brand/10 text-brand">
+                  <i className="fas fa-file-alt"></i>
+                </div>
+                <h3 className="text-sm font-medium text-gray-500">Total Documents</h3>
+                <div className="text-2xl font-semibold text-gray-900">{stats.totalDocuments}</div>
               </div>
-              <div className="stat-card">
-                <h3>Categories</h3>
-                <div className="stat-number">{stats.documentsByCategory?.length || 0}</div>
+              <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-card">
+                <div className="mb-2 inline-flex h-10 w-10 items-center justify-center rounded-lg bg-brand/10 text-brand">
+                  <i className="fas fa-tags"></i>
+                </div>
+                <h3 className="text-sm font-medium text-gray-500">Categories</h3>
+                <div className="text-2xl font-semibold text-gray-900">{stats.documentsByCategory?.length || 0}</div>
               </div>
             </div>
 
-            <div className="category-breakdown">
-              <h3>Documents by Category</h3>
-              <div className="category-list">
+            <div>
+              <h3 className="mb-3 text-lg font-semibold text-gray-900">Documents by Category</h3>
+              <div className="divide-y divide-gray-200 rounded-xl border border-gray-200">
                 {stats.documentsByCategory?.map((category) => (
-                  <div key={category._id} className="category-item">
-                    <span className="category-name">{category._id}</span>
-                    <span className="category-count">{category.count}</span>
+                  <div key={category._id} className="flex items-center justify-between px-4 py-3">
+                    <span className="text-sm font-medium text-gray-700">{category._id}</span>
+                    <span className="rounded-full bg-gray-100 px-3 py-1 text-sm font-semibold text-gray-700">
+                      {category.count}
+                    </span>
                   </div>
                 ))}
               </div>
@@ -107,33 +121,29 @@ const AdminPanel = () => {
         )}
 
         {activeTab === "users" && (
-          <div className="users-tab">
-            <div className="users-grid">
-              {users.map((user) => (
-                <div key={user._id} className="user-card">
-                  <div className="user-info">
-                    <h3>{user.fullName}</h3>
-                    <p>@{user.username}</p>
-                    <p>{user.email}</p>
-                    <span className={`role-badge ${user.role}`}>{user.role}</span>
-                  </div>
-                  <div className="user-stats">
-                    <p>Joined: {new Date(user.createdAt).toLocaleDateString()}</p>
-                    <p>Documents: {documents.filter((doc) => doc.uploadedBy._id === user._id).length}</p>
-                  </div>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {users.map((user) => (
+              <div key={user._id} className="rounded-xl border border-gray-200 bg-white p-5 shadow-card">
+                <div className="mb-2 text-base font-semibold text-gray-900">{user.fullName}</div>
+                <p className="text-sm text-gray-500">@{user.username}</p>
+                <p className="text-sm text-gray-500">{user.email}</p>
+                <span className="mt-2 inline-block rounded-full bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-700">
+                  {user.role}
+                </span>
+                <div className="mt-3 space-y-1 text-sm text-gray-600">
+                  <p>Joined: {new Date(user.createdAt).toLocaleDateString()}</p>
+                  <p>Documents: {documents.filter((doc) => doc.uploadedBy._id === user._id).length}</p>
                 </div>
-              ))}
-            </div>
+              </div>
+            ))}
           </div>
         )}
 
         {activeTab === "documents" && (
-          <div className="documents-tab">
-            <div className="documents-grid">
-              {documents.map((document) => (
-                <DocumentCard key={document._id} document={document} onDelete={handleDeleteDocument} showUser={true} />
-              ))}
-            </div>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {documents.map((document) => (
+              <DocumentCard key={document._id} document={document} onDelete={handleDeleteDocument} showUser={true} />
+            ))}
           </div>
         )}
       </div>
