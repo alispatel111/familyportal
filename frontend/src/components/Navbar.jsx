@@ -31,10 +31,12 @@ const Navbar = ({ user, onLogout }) => {
 
   return (
     <>
-      <nav className={`bg-white border-gray-200 dark:bg-gray-900 sticky top-0 z-50 transition-all duration-300 ${isScrolled ? 'shadow-md' : ''}`}>
+      <nav
+        className={`bg-white border-gray-200 dark:bg-gray-900 sticky top-0 z-50 transition-all duration-300 ${isScrolled ? "shadow-md" : ""}`}
+      >
         <div className="max-w-screen-xl flex flex-wrap items-center justify-between mx-auto p-4">
-          <Link 
-            to="/dashboard" 
+          <Link
+            to="/dashboard"
             className="flex items-center space-x-3 rtl:space-x-reverse group"
             onClick={closeMobileMenu}
           >
@@ -46,7 +48,7 @@ const Navbar = ({ user, onLogout }) => {
               Family Portal
             </span>
           </Link>
-          
+
           <div className="flex md:order-2 space-x-3 md:space-x-0 rtl:space-x-reverse">
             <div className="hidden md:flex items-center gap-3 mr-4">
               <div className="text-right">
@@ -69,7 +71,7 @@ const Navbar = ({ user, onLogout }) => {
                 </div>
               </div>
             </div>
-            
+
             <button
               onClick={onLogout}
               type="button"
@@ -81,67 +83,80 @@ const Navbar = ({ user, onLogout }) => {
               </span>
               <span className="absolute inset-0 bg-gradient-to-r from-blue-700 to-blue-900 opacity-0 transition-opacity duration-300 hover:opacity-100"></span>
             </button>
-            
-            <button 
+
+            <button
               onClick={toggleMobileMenu}
-              data-collapse-toggle="navbar-cta" 
-              type="button" 
-              className="inline-flex items-center p-2 w-10 h-10 justify-center text-sm text-gray-500 rounded-lg md:hidden hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-200 dark:text-gray-400 dark:hover:bg-gray-700 dark:focus:ring-gray-600 transition-all duration-300 hover:scale-110 ml-2" 
-              aria-controls="navbar-cta" 
+              data-collapse-toggle="navbar-cta"
+              type="button"
+              className="inline-flex items-center p-2 w-10 h-10 justify-center text-sm text-gray-500 rounded-lg md:hidden hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-200 dark:text-gray-400 dark:hover:bg-gray-700 dark:focus:ring-gray-600 transition-all duration-300 hover:scale-110 ml-2"
+              aria-controls="navbar-cta"
               aria-expanded="false"
             >
               <span className="sr-only">Open main menu</span>
-              <svg 
-                className={`w-5 h-5 transition-transform duration-300 ${isMobileMenuOpen ? 'rotate-90' : ''}`} 
-                aria-hidden="true" 
-                xmlns="http://www.w3.org/2000/svg" 
-                fill="none" 
+              <svg
+                className={`w-5 h-5 transition-transform duration-300 ${isMobileMenuOpen ? "rotate-90" : ""}`}
+                aria-hidden="true"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
                 viewBox="0 0 17 14"
               >
-                <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M1 1h15M1 7h15M1 13h15"/>
+                <path
+                  stroke="currentColor"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M1 1h15M1 7h15M1 13h15"
+                />
               </svg>
             </button>
           </div>
-          
-          <div 
-            className={`items-center justify-between w-full md:flex md:w-auto md:order-1 transition-all duration-500 ease-in-out ${isMobileMenuOpen ? 'block animate-fadeIn' : 'hidden'}`} 
+
+          <div
+            className={`items-center justify-between w-full md:flex md:w-auto md:order-1 transition-all duration-500 ease-in-out ${isMobileMenuOpen ? "block animate-fadeIn" : "hidden"}`}
             id="navbar-cta"
           >
             <ul className="flex flex-col font-medium p-4 md:p-0 mt-4 border border-gray-100 rounded-lg bg-gray-50 md:space-x-8 rtl:space-x-reverse md:flex-row md:mt-0 md:border-0 md:bg-white dark:bg-gray-800 md:dark:bg-gray-900 dark:border-gray-700">
               {[
                 { path: "/dashboard", icon: "fa-home", label: "Dashboard" },
+                { path: "/folders", icon: "fa-folder", label: "Folders" }, // Added Folders navigation item
                 { path: "/upload", icon: "fa-cloud-upload-alt", label: "Upload" },
                 { path: "/my-documents", icon: "fa-file-alt", label: "My Documents" },
                 { path: "/biometric-settings", icon: "fa-fingerprint", label: "Biometric" },
-                ...(user.role === "admin" ? [{ path: "/admin", icon: "fa-cog", label: "Admin Panel" }] : [])
+                ...(user.role === "admin" ? [{ path: "/admin", icon: "fa-cog", label: "Admin Panel" }] : []),
               ].map((item) => (
-                <li key={item.path} 
+                <li
+                  key={item.path}
                   onMouseEnter={() => setActiveHover(item.path)}
                   onMouseLeave={() => setActiveHover(null)}
                   className="w-full md:w-auto"
                 >
                   <Link
                     to={item.path}
-                    className={`relative flex py-2 px-3 md:p-0 rounded-sm transition-all duration-300 group ${isActive(item.path) 
-                      ? "text-white bg-blue-700 md:bg-transparent md:text-blue-700 md:dark:text-blue-500" 
-                      : "text-gray-900 hover:text-blue-700 dark:text-white dark:hover:text-blue-500"
+                    className={`relative flex py-2 px-3 md:p-0 rounded-sm transition-all duration-300 group ${
+                      isActive(item.path)
+                        ? "text-white bg-blue-700 md:bg-transparent md:text-blue-700 md:dark:text-blue-500"
+                        : "text-gray-900 hover:text-blue-700 dark:text-white dark:hover:text-blue-500"
                     }`}
                     onClick={closeMobileMenu}
                   >
                     <span className="flex items-center">
-                      <i className={`fas ${item.icon} mr-2 transition-all duration-300 ${activeHover === item.path ? 'transform scale-125' : ''}`}></i>
+                      <i
+                        className={`fas ${item.icon} mr-2 transition-all duration-300 ${activeHover === item.path ? "transform scale-125" : ""}`}
+                      ></i>
                       {item.label}
                     </span>
-                    
+
                     {/* Animated underline effect */}
-                    <span className={`absolute -bottom-1 left-0 w-0 h-0.5 bg-blue-600 transition-all duration-300 group-hover:w-full ${isActive(item.path) ? 'w-full' : ''}`}></span>
-                    
+                    <span
+                      className={`absolute -bottom-1 left-0 w-0 h-0.5 bg-blue-600 transition-all duration-300 group-hover:w-full ${isActive(item.path) ? "w-full" : ""}`}
+                    ></span>
+
                     {/* Hover background effect for mobile */}
                     <span className="absolute inset-0 bg-blue-100 opacity-0 transition-opacity duration-300 rounded group-hover:opacity-20 md:group-hover:opacity-10 -z-10"></span>
                   </Link>
                 </li>
               ))}
-              
+
               {/* Mobile user info */}
               <li className="md:hidden mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 animate-slideUp w-full">
                 <div className="flex items-center space-x-3 p-2 rounded-lg bg-blue-50 dark:bg-blue-900/20 transition-all duration-300 hover:bg-blue-100 dark:hover:bg-blue-900/30">
@@ -150,9 +165,7 @@ const Navbar = ({ user, onLogout }) => {
                     <i className="fas fa-user text-gray-500 dark:text-gray-400 relative"></i>
                   </div>
                   <div className="min-w-0 flex-1">
-                    <div className="font-medium text-gray-900 dark:text-white truncate">
-                      {user.fullName}
-                    </div>
+                    <div className="font-medium text-gray-900 dark:text-white truncate">{user.fullName}</div>
                     <div className="text-sm text-gray-500 dark:text-gray-400 truncate">
                       {user.role === "admin" ? "Administrator" : "Family Member"}
                     </div>

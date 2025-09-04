@@ -11,6 +11,7 @@ import Upload from "./pages/Upload"
 import MyDocuments from "./pages/MyDocuments"
 import AdminPanel from "./pages/AdminPanel"
 import BiometricSettings from "./pages/BiometricSettings"
+import Folders from "./pages/Folders" // Added Folders import
 import LoadingSpinner from "./components/LoadingSpinner"
 import ErrorBoundary from "./components/ErrorBoundary"
 import ToastContainer from "./components/ToastContainer"
@@ -106,6 +107,8 @@ function App() {
               <Route path="/dashboard" element={user ? <Dashboard user={user} /> : <Navigate to="/login" />} />
               <Route path="/upload" element={user ? <Upload /> : <Navigate to="/login" />} />
               <Route path="/my-documents" element={user ? <MyDocuments /> : <Navigate to="/login" />} />
+              <Route path="/folders" element={user ? <Folders /> : <Navigate to="/login" />} />{" "}
+              {/* Added Folders route */}
               <Route
                 path="/biometric-settings"
                 element={user ? <BiometricSettings user={user} /> : <Navigate to="/login" />}

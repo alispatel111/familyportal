@@ -1,17 +1,21 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Link } from "react-router-dom"
+import { Link, useSearchParams } from "react-router-dom"
 import axios from "axios"
 import DocumentCard from "../components/DocumentCard"
 
 const MyDocuments = () => {
   const [documents, setDocuments] = useState([])
   const [filteredDocuments, setFilteredDocuments] = useState([])
+  const [folders, setFolders] = useState([]) // Added folders state
   const [loading, setLoading] = useState(true)
   const [selectedCategory, setSelectedCategory] = useState("")
+  const [selectedFolder, setSelectedFolder] = useState("") // Added folder filter state
   const [searchTerm, setSearchTerm] = useState("")
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
+  const [isFolderDropdownOpen, setIsFolderDropdownOpen] = useState(false) // Added folder dropdown state
+  const [searchParams] = useSearchParams() // Added URL params support
 
   const categories = [
     "All",
@@ -28,12 +32,27 @@ const MyDocuments = () => {
   ]
 
   useEffect(() => {
+    fetchFolders()
     fetchDocuments()
-  }, [])
+
+    const folderParam = searchParams.get("folder")
+    if (folderParam) {
+      setSelectedFolder(folderParam)
+    }
+  }, [searchParams])
 
   useEffect(() => {
     filterDocuments()
-  }, [documents, selectedCategory, searchTerm])
+  }, [documents, selectedCategory, selectedFolder, searchTerm])
+
+  const fetchFolders = async () => {
+    try {
+      const response = await axios.get("/api/folders")
+      setFolders(response.data.folders)
+    } catch (error) {
+      console.error("❌ Error fetching folders:", error)
+    }
+  }
 
   const fetchDocuments = async () => {
     try {
@@ -58,6 +77,12 @@ const MyDocuments = () => {
 
     if (selectedCategory && selectedCategory !== "All") {
       filtered = filtered.filter((doc) => doc.category === selectedCategory)
+    }
+
+    if (selectedFolder === "no-folder") {
+      filtered = filtered.filter((doc) => !doc.folderId)
+    } else if (selectedFolder && selectedFolder !== "all") {
+      filtered = filtered.filter((doc) => doc.folderId === selectedFolder)
     }
 
     if (searchTerm) {
@@ -87,6 +112,26 @@ const MyDocuments = () => {
     }
   }
 
+  const handleMoveDocument = async (documentId, newFolderId) => {
+    try {
+      await axios.put(`/api/documents/${documentId}/move`, { folderId: newFolderId })
+
+      // Update local state
+      setDocuments((prev) =>
+        prev.map((doc) => (doc._id === documentId ? { ...doc, folderId: newFolderId || null } : doc)),
+      )
+
+      if (window.showToast) {
+        window.showToast("success", "Document Moved", "Document has been moved successfully")
+      }
+    } catch (error) {
+      console.error("Error moving document:", error)
+      if (window.showToast) {
+        window.showToast("error", "Move Failed", "Failed to move document")
+      }
+    }
+  }
+
   const clearSearch = () => {
     setSearchTerm("")
   }
@@ -95,9 +140,26 @@ const MyDocuments = () => {
     setIsDropdownOpen(!isDropdownOpen)
   }
 
+  const toggleFolderDropdown = () => {
+    setIsFolderDropdownOpen(!isFolderDropdownOpen)
+  }
+
   const selectCategory = (category) => {
     setSelectedCategory(category === "All" ? "" : category)
     setIsDropdownOpen(false)
+  }
+
+  const selectFolder = (folderId) => {
+    setSelectedFolder(folderId === "all" ? "" : folderId)
+    setIsFolderDropdownOpen(false)
+  }
+
+  const getFolderName = (folderId) => {
+    if (!folderId) return "No Folder"
+    if (folderId === "all") return "All Folders"
+    if (folderId === "no-folder") return "No Folder"
+    const folder = folders.find((f) => f._id === folderId)
+    return folder ? folder.name : "Unknown Folder"
   }
 
   if (loading) {
@@ -123,23 +185,37 @@ const MyDocuments = () => {
     <div className="space-y-8 animate-fadeIn">
       {/* Header Section */}
       <div className="rounded-2xl bg-gradient-to-r from-blue-50 to-indigo-50 p-6 shadow-lg transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5">
-        <div className="flex items-center">
-          <div className="flex items-center justify-center w-12 h-12 bg-white rounded-lg shadow-sm transition-all duration-300 hover:scale-110">
-            <i className="fas fa-file-alt text-2xl text-brand"></i>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center">
+            <div className="flex items-center justify-center w-12 h-12 bg-white rounded-lg shadow-sm transition-all duration-300 hover:scale-110">
+              <i className="fas fa-file-alt text-2xl text-brand"></i>
+            </div>
+            <div className="ml-4">
+              <h1 className="text-2xl md:text-3xl font-bold text-gray-900">My Documents</h1>
+              <p className="mt-1 text-sm text-gray-600">Manage and organize your uploaded documents securely</p>
+            </div>
           </div>
-          <div className="ml-4">
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
-              My Documents
-            </h1>
-            <p className="mt-1 text-sm text-gray-600">
-              Manage and organize your uploaded documents securely
-            </p>
+          <div className="flex gap-2">
+            <Link
+              to="/folders"
+              className="inline-flex items-center gap-2 rounded-lg bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 transition-all duration-200"
+            >
+              <i className="fas fa-folder"></i>
+              Manage Folders
+            </Link>
+            <Link
+              to="/upload"
+              className="inline-flex items-center gap-2 rounded-lg bg-brand px-3 py-2 text-sm font-medium text-white hover:bg-brand-hover transition-all duration-200"
+            >
+              <i className="fas fa-plus"></i>
+              Upload
+            </Link>
           </div>
         </div>
       </div>
 
       {/* Search and Filter Section */}
-      <div className="grid gap-6 rounded-2xl bg-white p-6 shadow-card md:grid-cols-2 transition-all duration-300 hover:shadow-lg">
+      <div className="grid gap-6 rounded-2xl bg-white p-6 shadow-card md:grid-cols-3 transition-all duration-300 hover:shadow-lg">
         <div className="space-y-2">
           <label htmlFor="search" className="block text-sm font-medium text-gray-700">
             <i className="fas fa-search mr-2 text-gray-400"></i>
@@ -167,6 +243,56 @@ const MyDocuments = () => {
 
         <div className="space-y-2">
           <label className="block text-sm font-medium text-gray-700">
+            <i className="fas fa-folder mr-2 text-gray-400"></i>
+            Filter by Folder
+          </label>
+          <div className="relative">
+            <button
+              onClick={toggleFolderDropdown}
+              className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-left text-gray-900 outline-none transition-all duration-300 flex items-center justify-between hover:border-brand focus:border-brand focus:ring-2 focus:ring-brand/20"
+            >
+              <span>{getFolderName(selectedFolder) || "All Folders"}</span>
+              <i
+                className={`fas fa-chevron-${isFolderDropdownOpen ? "up" : "down"} text-sm transition-transform duration-300`}
+              ></i>
+            </button>
+
+            {isFolderDropdownOpen && (
+              <div className="absolute z-10 w-full mt-2 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden animate-dropdownFade">
+                <div
+                  onClick={() => selectFolder("all")}
+                  className={`px-4 py-3 cursor-pointer transition-all duration-200 hover:bg-blue-50 hover:pl-6 ${
+                    !selectedFolder ? "bg-brand/10 text-brand font-medium" : "text-gray-700"
+                  }`}
+                >
+                  📁 All Folders
+                </div>
+                <div
+                  onClick={() => selectFolder("no-folder")}
+                  className={`px-4 py-3 cursor-pointer transition-all duration-200 hover:bg-blue-50 hover:pl-6 ${
+                    selectedFolder === "no-folder" ? "bg-brand/10 text-brand font-medium" : "text-gray-700"
+                  }`}
+                >
+                  📄 No Folder
+                </div>
+                {folders.map((folder) => (
+                  <div
+                    key={folder._id}
+                    onClick={() => selectFolder(folder._id)}
+                    className={`px-4 py-3 cursor-pointer transition-all duration-200 hover:bg-blue-50 hover:pl-6 ${
+                      selectedFolder === folder._id ? "bg-brand/10 text-brand font-medium" : "text-gray-700"
+                    }`}
+                  >
+                    📁 {folder.name}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-gray-700">
             <i className="fas fa-filter mr-2 text-gray-400"></i>
             Filter by Category
           </label>
@@ -177,9 +303,11 @@ const MyDocuments = () => {
               className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-left text-gray-900 outline-none transition-all duration-300 flex items-center justify-between hover:border-brand focus:border-brand focus:ring-2 focus:ring-brand/20"
             >
               <span>{selectedCategory || "All Categories"}</span>
-              <i className={`fas fa-chevron-${isDropdownOpen ? 'up' : 'down'} text-sm transition-transform duration-300`}></i>
+              <i
+                className={`fas fa-chevron-${isDropdownOpen ? "up" : "down"} text-sm transition-transform duration-300`}
+              ></i>
             </button>
-            
+
             {/* Custom Dropdown Options */}
             {isDropdownOpen && (
               <div className="absolute z-10 w-full mt-2 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden animate-dropdownFade">
@@ -188,8 +316,8 @@ const MyDocuments = () => {
                     key={category}
                     onClick={() => selectCategory(category)}
                     className={`px-4 py-3 cursor-pointer transition-all duration-200 hover:bg-blue-50 hover:pl-6 ${
-                      (selectedCategory === category || (!selectedCategory && category === "All")) 
-                        ? "bg-brand/10 text-brand font-medium" 
+                      selectedCategory === category || (!selectedCategory && category === "All")
+                        ? "bg-brand/10 text-brand font-medium"
                         : "text-gray-700"
                     }`}
                   >
@@ -207,17 +335,26 @@ const MyDocuments = () => {
         <i className="fas fa-chart-pie mr-2 text-brand"></i>
         Showing <span className="font-semibold mx-1">{filteredDocuments.length}</span> of{" "}
         <span className="font-semibold mx-1">{documents.length}</span> documents
+        {(selectedFolder || selectedCategory) && (
+          <span className="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+            {selectedFolder && selectedFolder !== "all" && `📁 ${getFolderName(selectedFolder)}`}
+            {selectedFolder && selectedCategory && " • "}
+            {selectedCategory && `🏷️ ${selectedCategory}`}
+          </span>
+        )}
       </div>
 
       {/* Documents Grid */}
       {filteredDocuments.length > 0 ? (
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {filteredDocuments.map((document) => (
-            <DocumentCard 
-              key={document._id} 
-              document={document} 
-              onDelete={handleDeleteDocument} 
-              showUser={false} 
+            <DocumentCard
+              key={document._id}
+              document={document}
+              onDelete={handleDeleteDocument}
+              onMove={handleMoveDocument} // Added move handler
+              folders={folders} // Pass folders for move functionality
+              showUser={false}
             />
           ))}
         </div>
@@ -228,11 +365,11 @@ const MyDocuments = () => {
           </div>
           <h3 className="text-xl font-semibold text-gray-900 mb-2">No Documents Found</h3>
           <p className="text-gray-600 max-w-md mx-auto">
-            {searchTerm || selectedCategory
+            {searchTerm || selectedCategory || selectedFolder
               ? "No documents match your search criteria. Try adjusting your filters."
               : "You haven't uploaded any documents yet. Start by uploading your first document."}
           </p>
-          {!searchTerm && !selectedCategory && (
+          {!searchTerm && !selectedCategory && !selectedFolder && (
             <Link
               to="/upload"
               className="mt-6 inline-flex items-center gap-2 rounded-xl bg-brand px-5 py-3 text-sm font-semibold text-white transition-all duration-300 hover:bg-brand-hover hover:shadow-lg hover:-translate-y-0.5"

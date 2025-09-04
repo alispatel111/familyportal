@@ -1,12 +1,13 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import axios from "axios"
 
 const Upload = () => {
   const navigate = useNavigate()
-  const [formData, setFormData] = useState({ category: "", file: null })
+  const [formData, setFormData] = useState({ category: "", file: null, folderId: "" }) // Added folderId to form data
+  const [folders, setFolders] = useState([]) // Added folders state
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState("")
   const [success, setSuccess] = useState("")
@@ -25,6 +26,19 @@ const Upload = () => {
     "Educational Certificates",
     "Other",
   ]
+
+  useEffect(() => {
+    fetchFolders()
+  }, [])
+
+  const fetchFolders = async () => {
+    try {
+      const response = await axios.get("/api/folders")
+      setFolders(response.data.folders)
+    } catch (error) {
+      console.error("Error fetching folders:", error)
+    }
+  }
 
   const handleDragEnter = (e) => {
     e.preventDefault()
@@ -47,7 +61,7 @@ const Upload = () => {
     e.preventDefault()
     e.stopPropagation()
     setIsDragging(false)
-    
+
     const files = e.dataTransfer.files
     if (files.length) {
       setFormData({ ...formData, file: files[0] })
@@ -100,6 +114,9 @@ const Upload = () => {
     const uploadData = new FormData()
     uploadData.append("document", formData.file)
     uploadData.append("category", formData.category)
+    if (formData.folderId) {
+      uploadData.append("folderId", formData.folderId)
+    }
 
     try {
       const progressInterval = setInterval(() => {
@@ -124,7 +141,7 @@ const Upload = () => {
         window.showToast("success", "Upload Successful!", `${formData.file.name} has been uploaded successfully`)
       }
 
-      setFormData({ category: "", file: null })
+      setFormData({ category: "", file: null, folderId: "" }) // Reset folderId in form data
       const fileInput = document.getElementById("file")
       if (fileInput) fileInput.value = ""
 
@@ -223,12 +240,38 @@ const Upload = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  File Upload
+                <label htmlFor="folderId" className="block text-sm font-medium text-gray-700 mb-2">
+                  Folder (Optional)
                 </label>
+                <div className="relative">
+                  <select
+                    id="folderId"
+                    name="folderId"
+                    value={formData.folderId}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 rounded-xl border border-gray-300 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 appearance-none shadow-sm"
+                  >
+                    <option value="">No Folder (Root)</option>
+                    {folders.map((folder) => (
+                      <option key={folder._id} value={folder._id}>
+                        📁 {folder.name}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                    <i className="fas fa-chevron-down"></i>
+                  </div>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  Choose a folder to organize your document, or leave empty to upload to root
+                </p>
+              </div>
 
-                <div 
-                  className={`relative rounded-2xl border-2 border-dashed p-8 text-center transition-all duration-300 ${isDragging ? 'border-blue-500 bg-blue-50 scale-[1.02]' : 'border-gray-300 bg-gray-50'} ${formData.file ? 'border-green-500 bg-green-50' : ''} hover:border-blue-400 hover:bg-blue-50`}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">File Upload</label>
+
+                <div
+                  className={`relative rounded-2xl border-2 border-dashed p-8 text-center transition-all duration-300 ${isDragging ? "border-blue-500 bg-blue-50 scale-[1.02]" : "border-gray-300 bg-gray-50"} ${formData.file ? "border-green-500 bg-green-50" : ""} hover:border-blue-400 hover:bg-blue-50`}
                   onDragEnter={handleDragEnter}
                   onDragOver={handleDragOver}
                   onDragLeave={handleDragLeave}
@@ -244,7 +287,9 @@ const Upload = () => {
                     className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
                   />
                   <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-100 text-blue-600 mb-4">
-                    <i className={`text-2xl ${formData.file ? getFileIcon(formData.file) : "fas fa-cloud-upload-alt"}`}></i>
+                    <i
+                      className={`text-2xl ${formData.file ? getFileIcon(formData.file) : "fas fa-cloud-upload-alt"}`}
+                    ></i>
                   </div>
                   <div className="flex flex-col items-center">
                     <p className="font-medium text-gray-900 mb-1">
@@ -298,7 +343,7 @@ const Upload = () => {
               {uploading && (
                 <div className="space-y-3">
                   <div className="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
-                    <div 
+                    <div
                       className="h-2.5 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 transition-all duration-300 ease-out"
                       style={{ width: `${uploadProgress}%` }}
                     ></div>
@@ -313,7 +358,7 @@ const Upload = () => {
               <button
                 type="submit"
                 disabled={uploading}
-                className={`w-full py-3 px-4 rounded-xl font-medium text-white transition-all duration-300 flex items-center justify-center gap-2 ${uploading ? 'bg-gray-400 cursor-not-allowed' : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-md hover:shadow-lg transform hover:-translate-y-0.5'}`}
+                className={`w-full py-3 px-4 rounded-xl font-medium text-white transition-all duration-300 flex items-center justify-center gap-2 ${uploading ? "bg-gray-400 cursor-not-allowed" : "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-md hover:shadow-lg transform hover:-translate-y-0.5"}`}
               >
                 {uploading ? (
                   <>
@@ -332,7 +377,7 @@ const Upload = () => {
         </div>
 
         <div className="mt-6 text-center">
-          <button 
+          <button
             onClick={() => navigate("/my-documents")}
             className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900 transition-colors duration-200"
           >

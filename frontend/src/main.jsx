@@ -2,13 +2,16 @@ import React from "react"
 import ReactDOM from "react-dom/client"
 import App from "./App.jsx"
 import axios from "axios"
-import './index.css'
+import "./index.css"
 
 // Configure axios for production
 axios.defaults.withCredentials = true
 
-// Always use the deployed backend URL - NO localhost
-const API_BASE_URL = "https://familyportal-backend.vercel.app"
+const API_BASE_URL =
+  import.meta.env.MODE === "development"
+    ? "http://localhost:5000" // Use localhost for development
+    : "https://familyportal-backend.vercel.app" // Use production URL for build
+
 axios.defaults.baseURL = API_BASE_URL
 
 console.log("🔗 API Base URL:", axios.defaults.baseURL)
