@@ -15,6 +15,96 @@ const BiometricLogin = ({ onLogin, onCancel }) => {
     }, 100)
   }, [])
 
+  const detectApplicationContext = () => {
+    const isElectron = typeof window !== "undefined" && window.process && window.process.type
+    const isCordova = typeof window !== "undefined" && window.cordova
+    const isCapacitor = typeof window !== "undefined" && window.Capacitor
+    const isWebView =
+      typeof window !== "undefined" &&
+      (window.navigator.userAgent.includes("wv") ||
+        window.navigator.userAgent.includes("WebView") ||
+        window.navigator.standalone === true)
+
+    return {
+      isElectron: !!isElectron,
+      isCordova: !!isCordova,
+      isCapacitor: !!isCapacitor,
+      isWebView: !!isWebView,
+      isApplication: !!(isElectron || isCordova || isCapacitor || isWebView),
+      context: isElectron
+        ? "electron"
+        : isCordova
+          ? "cordova"
+          : isCapacitor
+            ? "capacitor"
+            : isWebView
+              ? "webview"
+              : "web",
+    }
+  }
+
+  const checkWebAuthnSupport = async () => {
+    const appContext = detectApplicationContext()
+    console.log("🔍 Application context:", appContext)
+
+    // Basic WebAuthn support
+    if (!window.PublicKeyCredential) {
+      console.log("❌ WebAuthn not supported")
+      return { supported: false, reason: "WebAuthn API not available" }
+    }
+
+    try {
+      // Check if user verifying platform authenticator is available
+      const available = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()
+
+      if (!available && appContext.isApplication) {
+        // For applications, try alternative detection methods
+        console.log("🔄 Trying alternative biometric detection for application...")
+
+        // Check if we're in a secure context (required for WebAuthn)
+        if (!window.isSecureContext) {
+          console.log("⚠️ Not in secure context, trying to enable...")
+          // For applications, we might need to handle this differently
+          if (appContext.isElectron) {
+            // Electron apps can work with localhost
+            console.log("✅ Electron context detected, proceeding...")
+          } else {
+            return { supported: false, reason: "Secure context required for biometric authentication" }
+          }
+        }
+
+        // Try to create a test credential to verify support
+        try {
+          const testSupport = await navigator.credentials.create({
+            publicKey: {
+              challenge: new Uint8Array(32),
+              rp: { name: "Test" },
+              user: { id: new Uint8Array(16), name: "test", displayName: "Test" },
+              pubKeyCredParams: [{ alg: -7, type: "public-key" }],
+              authenticatorSelection: {
+                authenticatorAttachment: "platform",
+                userVerification: "required",
+              },
+              timeout: 1000, // Short timeout for test
+            },
+          })
+          return { supported: true, available: true }
+        } catch (testError) {
+          console.log("🔍 Test credential creation failed:", testError.name)
+          if (testError.name === "NotAllowedError" || testError.name === "AbortError") {
+            // This actually means biometric is available but user cancelled/timeout
+            return { supported: true, available: true }
+          }
+        }
+      }
+
+      return { supported: true, available }
+    } catch (error) {
+      console.log("❌ WebAuthn support check failed:", error)
+      return { supported: false, reason: error.message }
+    }
+  }
+
   const startImmediateBiometricAuth = async () => {
     console.log("🚀 Starting immediate biometric authentication...")
     setLoading(true)
@@ -22,6 +112,11 @@ const BiometricLogin = ({ onLogin, onCancel }) => {
     setStep("authenticating")
 
     try {
+      const supportCheck = await checkWebAuthnSupport()
+      if (!supportCheck.supported) {
+        throw new Error(`Biometric authentication not supported: ${supportCheck.reason}`)
+      }
+
       console.log("📡 Calling immediate biometric login API...")
 
       const response = await axios.post("/api/auth/biometric/login/immediate")
@@ -41,7 +136,7 @@ const BiometricLogin = ({ onLogin, onCancel }) => {
       if (error.response?.status === 400) {
         setError("No biometric authentication setup found. Please setup biometric first or use password login.")
       } else {
-        setError(error.response?.data?.message || "Biometric authentication failed. Please try again.")
+        setError(error.response?.data?.message || error.message || "Biometric authentication failed. Please try again.")
       }
 
       setStep("error")
@@ -55,17 +150,30 @@ const BiometricLogin = ({ onLogin, onCancel }) => {
       console.log("🔐 Performing WebAuthn authentication...")
       setStep("biometric-prompt")
 
+      const appContext = detectApplicationContext()
+
       const challengeString = options.challenge
       if (!challengeString) {
         throw new Error("No challenge received from server")
       }
 
       try {
-        const paddedChallenge = challengeString.padEnd(
-          challengeString.length + ((4 - (challengeString.length % 4)) % 4),
-          "=",
-        )
-        options.challenge = Uint8Array.from(atob(paddedChallenge), (c) => c.charCodeAt(0))
+        let challengeBytes
+        if (typeof challengeString === "string") {
+          // Handle both base64 and base64url encoding
+          const normalizedChallenge = challengeString.replace(/-/g, "+").replace(/_/g, "/")
+          const paddedChallenge = normalizedChallenge.padEnd(
+            normalizedChallenge.length + ((4 - (normalizedChallenge.length % 4)) % 4),
+            "=",
+          )
+          challengeBytes = Uint8Array.from(atob(paddedChallenge), (c) => c.charCodeAt(0))
+        } else if (challengeString instanceof ArrayBuffer || Array.isArray(challengeString)) {
+          challengeBytes = new Uint8Array(challengeString)
+        } else {
+          throw new Error("Invalid challenge format")
+        }
+
+        options.challenge = challengeBytes
         console.log("✅ Challenge converted successfully")
       } catch (e) {
         console.error("❌ Challenge conversion error:", e)
@@ -81,9 +189,15 @@ const BiometricLogin = ({ onLogin, onCancel }) => {
 
             let credentialIdBytes
             if (typeof cred.id === "string") {
-              const paddedCredId = cred.id.padEnd(cred.id.length + ((4 - (cred.id.length % 4)) % 4), "=")
+              const normalizedCredId = cred.id.replace(/-/g, "+").replace(/_/g, "/")
+              const paddedCredId = normalizedCredId.padEnd(
+                normalizedCredId.length + ((4 - (normalizedCredId.length % 4)) % 4),
+                "=",
+              )
               credentialIdBytes = Uint8Array.from(atob(paddedCredId), (c) => c.charCodeAt(0))
             } else if (Array.isArray(cred.id)) {
+              credentialIdBytes = new Uint8Array(cred.id)
+            } else if (cred.id instanceof ArrayBuffer) {
               credentialIdBytes = new Uint8Array(cred.id)
             } else {
               throw new Error("Unknown credential ID format")
@@ -103,11 +217,40 @@ const BiometricLogin = ({ onLogin, onCancel }) => {
         throw new Error("No credentials available for authentication")
       }
 
+      const webAuthnOptions = {
+        publicKey: {
+          ...options,
+          timeout: appContext.isApplication ? 120000 : 60000, // Longer timeout for apps
+          userVerification: "preferred", // More flexible for applications
+        },
+      }
+
+      if (appContext.isApplication) {
+        console.log(`🔧 Applying ${appContext.context} specific optimizations...`)
+
+        // For Electron apps, ensure proper window focus
+        if (appContext.isElectron && window.electronAPI) {
+          try {
+            await window.electronAPI.focusWindow()
+          } catch (e) {
+            console.log("Could not focus window:", e)
+          }
+        }
+
+        // For Cordova/PhoneGap apps
+        if (appContext.isCordova && window.device) {
+          console.log("📱 Cordova device detected:", window.device.platform)
+        }
+
+        // For Capacitor apps
+        if (appContext.isCapacitor && window.Capacitor) {
+          console.log("📱 Capacitor platform:", window.Capacitor.getPlatform())
+        }
+      }
+
       console.log("🔐 Starting WebAuthn credential.get()...")
 
-      const credential = await navigator.credentials.get({
-        publicKey: options,
-      })
+      const credential = await navigator.credentials.get(webAuthnOptions)
 
       console.log("✅ WebAuthn authentication successful!")
       console.log("📋 Credential received:", credential)
@@ -128,6 +271,7 @@ const BiometricLogin = ({ onLogin, onCancel }) => {
           },
           type: credential.type,
         },
+        applicationContext: appContext,
       }
 
       console.log("📤 Sending verification data to server...")
@@ -149,11 +293,20 @@ const BiometricLogin = ({ onLogin, onCancel }) => {
       if (error.name === "NotAllowedError") {
         errorMessage = "Biometric authentication was cancelled or denied"
       } else if (error.name === "SecurityError") {
-        errorMessage = "Security error during biometric authentication"
+        const appContext = detectApplicationContext()
+        if (appContext.isApplication) {
+          errorMessage = "Security error: Please ensure your app has proper permissions for biometric access"
+        } else {
+          errorMessage = "Security error: Please ensure you're using HTTPS"
+        }
       } else if (error.name === "NetworkError") {
-        errorMessage = "Network error during authentication"
+        errorMessage = "Network error during authentication. Please check your connection."
       } else if (error.name === "InvalidCharacterError" || error.message.includes("Invalid credential ID format")) {
-        errorMessage = "Invalid credential data. Please try password login."
+        errorMessage = "Invalid credential data. Please try password login or re-setup biometric authentication."
+      } else if (error.name === "NotSupportedError") {
+        errorMessage = "Biometric authentication is not supported in this application context"
+      } else if (error.name === "AbortError") {
+        errorMessage = "Authentication timed out. Please try again."
       } else if (error.response?.status === 400) {
         errorMessage = "Biometric credential not recognized. Please try password login."
       } else if (error.message) {
@@ -174,6 +327,8 @@ const BiometricLogin = ({ onLogin, onCancel }) => {
   }
 
   const renderContent = () => {
+    const appContext = detectApplicationContext()
+
     switch (step) {
       case "preparing":
         return (
@@ -185,7 +340,11 @@ const BiometricLogin = ({ onLogin, onCancel }) => {
               <i className="fas fa-cog mr-2 text-blue-500 animate-spin"></i>
               Preparing Biometric Login
             </h3>
-            <p className="text-sm text-gray-600">Setting up biometric authentication...</p>
+            <p className="text-sm text-gray-600">
+              {appContext.isApplication
+                ? `Setting up biometric authentication for ${appContext.context} app...`
+                : "Setting up biometric authentication..."}
+            </p>
           </>
         )
 
@@ -199,7 +358,11 @@ const BiometricLogin = ({ onLogin, onCancel }) => {
               <i className="fas fa-fingerprint mr-2 text-blue-600"></i>
               Checking Biometric Setup
             </h3>
-            <p className="text-sm text-gray-600">Looking for registered biometric credentials...</p>
+            <p className="text-sm text-gray-600">
+              {appContext.isApplication
+                ? "Verifying app biometric capabilities..."
+                : "Looking for registered biometric credentials..."}
+            </p>
           </>
         )
 
@@ -219,7 +382,11 @@ const BiometricLogin = ({ onLogin, onCancel }) => {
             <div className="mt-2 space-y-2 rounded-xl border border-blue-100 bg-blue-50/50 p-4 text-left backdrop-blur-sm transition-all duration-300 hover:shadow-md">
               <p className="text-sm text-blue-700 flex items-center">
                 <i className="fas fa-magic mr-2 text-blue-500"></i>
-                <strong>Ready for authentication</strong>
+                <strong>
+                  {appContext.isApplication
+                    ? `Ready for ${appContext.context} app authentication`
+                    : "Ready for authentication"}
+                </strong>
               </p>
               <p className="text-sm text-blue-600 flex items-center">
                 <i className="fas fa-fingerprint mr-2 text-blue-400"></i>
@@ -233,6 +400,12 @@ const BiometricLogin = ({ onLogin, onCancel }) => {
                 <i className="fas fa-keyboard mr-2 text-blue-400"></i>
                 Enter device PIN if prompted
               </p>
+              {appContext.isApplication && (
+                <p className="text-sm text-blue-600 flex items-center">
+                  <i className="fas fa-mobile-alt mr-2 text-blue-400"></i>
+                  App-optimized authentication
+                </p>
+              )}
             </div>
           </>
         )
@@ -355,7 +528,7 @@ const BiometricLogin = ({ onLogin, onCancel }) => {
             </li>
             <li className="flex items-center transition-colors duration-200 hover:text-gray-800">
               <i className="fas fa-check-circle mr-2 text-green-500 text-xs"></i>
-              Fastest login method
+              {detectApplicationContext().isApplication ? "App-optimized authentication" : "Fastest login method"}
             </li>
           </ul>
 
@@ -374,10 +547,29 @@ const BiometricLogin = ({ onLogin, onCancel }) => {
                   <i className="fas fa-circle mr-2 text-amber-500 text-xs"></i>
                   Check device screen lock is enabled
                 </li>
-                <li className="flex items-center">
-                  <i className="fas fa-circle mr-2 text-amber-500 text-xs"></i>
-                  Try clearing browser cache
-                </li>
+                {detectApplicationContext().isApplication ? (
+                  <>
+                    <li className="flex items-center">
+                      <i className="fas fa-circle mr-2 text-amber-500 text-xs"></i>
+                      Grant biometric permissions to app
+                    </li>
+                    <li className="flex items-center">
+                      <i className="fas fa-circle mr-2 text-amber-500 text-xs"></i>
+                      Restart app if authentication fails
+                    </li>
+                  </>
+                ) : (
+                  <>
+                    <li className="flex items-center">
+                      <i className="fas fa-circle mr-2 text-amber-500 text-xs"></i>
+                      Try clearing browser cache
+                    </li>
+                    <li className="flex items-center">
+                      <i className="fas fa-circle mr-2 text-amber-500 text-xs"></i>
+                      Ensure HTTPS connection
+                    </li>
+                  </>
+                )}
                 <li className="flex items-center">
                   <i className="fas fa-circle mr-2 text-amber-500 text-xs"></i>
                   Use password login as backup

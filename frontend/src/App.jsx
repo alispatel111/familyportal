@@ -11,11 +11,11 @@ import Upload from "./pages/Upload"
 import MyDocuments from "./pages/MyDocuments"
 import AdminPanel from "./pages/AdminPanel"
 import BiometricSettings from "./pages/BiometricSettings"
-import Folders from "./pages/Folders" // Added Folders import
+import Folders from "./pages/Folders"
 import LoadingSpinner from "./components/LoadingSpinner"
 import ErrorBoundary from "./components/ErrorBoundary"
 import ToastContainer from "./components/ToastContainer"
-// Removed: import "./App.css"
+import InstallPrompt from "./components/InstallPrompt" // Added InstallPrompt component for PWA functionality
 
 function App() {
   const [user, setUser] = useState(null)
@@ -121,6 +121,7 @@ function App() {
             </Routes>
           </main>
           <ToastContainer />
+          <InstallPrompt /> {/* Added PWA install prompt for mobile app experience */}
         </div>
       </Router>
     </ErrorBoundary>
