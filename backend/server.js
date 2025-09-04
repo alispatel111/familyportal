@@ -96,6 +96,17 @@ const userSchema = new mongoose.Schema({
 
 const User = mongoose.model("User", userSchema)
 
+// Folder Schema - Added new schema for folder management
+const folderSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  description: { type: String, default: "" },
+  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+  createdAt: { type: Date, default: Date.now },
+  color: { type: String, default: "#6366f1" }, // Default folder color
+})
+
+const Folder = mongoose.model("Folder", folderSchema)
+
 // Document Schema - Modified for production
 const documentSchema = new mongoose.Schema({
   filename: { type: String, required: true },
@@ -104,6 +115,7 @@ const documentSchema = new mongoose.Schema({
   filePath: { type: String }, // Optional for production
   fileData: { type: Buffer }, // Store file data in database for production
   category: { type: String, required: true },
+  folderId: { type: mongoose.Schema.Types.ObjectId, ref: "Folder", default: null }, // Added folder reference
   uploadedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
   uploadDate: { type: Date, default: Date.now },
   fileSize: { type: Number },
@@ -373,22 +385,32 @@ app.post("/api/auth/signup", async (req, res) => {
 
 app.post("/api/auth/login", async (req, res) => {
   try {
+    console.log("🔐 Login attempt received:")
+    console.log("  - Request body:", req.body)
+    console.log("  - Content-Type:", req.headers["content-type"])
+    console.log("  - Origin:", req.headers.origin)
+
     const { username, password } = req.body
 
     if (!username || !password) {
+      console.log("❌ Missing credentials - username:", !!username, "password:", !!password)
       return res.status(400).json({ message: "Username and password are required" })
     }
 
+    console.log("🔍 Looking for user with username/email:", username)
     const user = await User.findOne({
       $or: [{ username }, { email: username }],
     })
 
     if (!user) {
+      console.log("❌ User not found for:", username)
       return res.status(400).json({ message: "Invalid credentials" })
     }
 
+    console.log("✅ User found:", user.username)
     const isMatch = await bcrypt.compare(password, user.password)
     if (!isMatch) {
+      console.log("❌ Password mismatch for user:", user.username)
       return res.status(400).json({ message: "Invalid credentials" })
     }
 
@@ -410,7 +432,7 @@ app.post("/api/auth/login", async (req, res) => {
       },
     })
   } catch (error) {
-    console.error("Login error:", error)
+    console.error("❌ Login error:", error)
     res.status(500).json({ message: "Server error during login" })
   }
 })
@@ -731,6 +753,209 @@ app.post("/api/auth/biometric/disable", requireAuth, async (req, res) => {
   }
 })
 
+// ==================== FOLDER ROUTES ====================
+
+app.get("/api/folders", requireAuth, async (req, res) => {
+  try {
+    console.log("=== FETCHING FOLDERS ===")
+    console.log("User ID:", req.session.userId)
+
+    const query = { createdBy: req.session.userId }
+
+    const folders = await Folder.find(query).populate("createdBy", "username fullName").sort({ createdAt: -1 })
+
+    // Get document count for each folder
+    const foldersWithCounts = await Promise.all(
+      folders.map(async (folder) => {
+        const documentCount = await Document.countDocuments({
+          folderId: folder._id,
+          uploadedBy: req.session.userId,
+        })
+        return {
+          ...folder.toObject(),
+          documentCount,
+        }
+      }),
+    )
+
+    console.log("📁 Found", folders.length, "folders")
+    res.json({ folders: foldersWithCounts })
+  } catch (error) {
+    console.error("❌ ERROR FETCHING FOLDERS:", error)
+    res.status(500).json({ message: "Server error while fetching folders" })
+  }
+})
+
+app.post("/api/folders", requireAuth, async (req, res) => {
+  try {
+    const { name, description, color } = req.body
+
+    if (!name || name.trim().length === 0) {
+      return res.status(400).json({ message: "Folder name is required" })
+    }
+
+    // Check if folder with same name already exists for this user
+    const existingFolder = await Folder.findOne({
+      name: name.trim(),
+      createdBy: req.session.userId,
+    })
+
+    if (existingFolder) {
+      return res.status(400).json({ message: "A folder with this name already exists" })
+    }
+
+    const folder = new Folder({
+      name: name.trim(),
+      description: description?.trim() || "",
+      color: color || "#6366f1",
+      createdBy: req.session.userId,
+    })
+
+    await folder.save()
+    await folder.populate("createdBy", "username fullName")
+
+    console.log("✅ Folder created successfully:", folder.name)
+    res.status(201).json({
+      message: "Folder created successfully",
+      folder: {
+        ...folder.toObject(),
+        documentCount: 0,
+      },
+    })
+  } catch (error) {
+    console.error("❌ ERROR CREATING FOLDER:", error)
+    res.status(500).json({ message: "Server error while creating folder" })
+  }
+})
+
+app.put("/api/folders/:id", requireAuth, async (req, res) => {
+  try {
+    const { name, description, color } = req.body
+    const folderId = req.params.id
+
+    const folder = await Folder.findById(folderId)
+
+    if (!folder) {
+      return res.status(404).json({ message: "Folder not found" })
+    }
+
+    if (folder.createdBy.toString() !== req.session.userId) {
+      return res.status(403).json({ message: "Access denied" })
+    }
+
+    // Check if new name conflicts with existing folders
+    if (name && name.trim() !== folder.name) {
+      const existingFolder = await Folder.findOne({
+        name: name.trim(),
+        createdBy: req.session.userId,
+        _id: { $ne: folderId },
+      })
+
+      if (existingFolder) {
+        return res.status(400).json({ message: "A folder with this name already exists" })
+      }
+    }
+
+    // Update folder
+    const updatedFolder = await Folder.findByIdAndUpdate(
+      folderId,
+      {
+        name: name?.trim() || folder.name,
+        description: description?.trim() || folder.description,
+        color: color || folder.color,
+      },
+      { new: true },
+    ).populate("createdBy", "username fullName")
+
+    const documentCount = await Document.countDocuments({
+      folderId: folderId,
+      uploadedBy: req.session.userId,
+    })
+
+    console.log("✅ Folder updated successfully:", updatedFolder.name)
+    res.json({
+      message: "Folder updated successfully",
+      folder: {
+        ...updatedFolder.toObject(),
+        documentCount,
+      },
+    })
+  } catch (error) {
+    console.error("❌ ERROR UPDATING FOLDER:", error)
+    res.status(500).json({ message: "Server error while updating folder" })
+  }
+})
+
+app.delete("/api/folders/:id", requireAuth, async (req, res) => {
+  try {
+    const folderId = req.params.id
+
+    const folder = await Folder.findById(folderId)
+
+    if (!folder) {
+      return res.status(404).json({ message: "Folder not found" })
+    }
+
+    if (folder.createdBy.toString() !== req.session.userId) {
+      return res.status(403).json({ message: "Access denied" })
+    }
+
+    // Check if folder has documents
+    const documentCount = await Document.countDocuments({ folderId: folderId })
+
+    if (documentCount > 0) {
+      // Move documents back to no folder (null)
+      await Document.updateMany({ folderId: folderId }, { $unset: { folderId: 1 } })
+      console.log(`📁 Moved ${documentCount} documents out of deleted folder`)
+    }
+
+    await Folder.findByIdAndDelete(folderId)
+
+    console.log("✅ Folder deleted successfully:", folder.name)
+    res.json({ message: "Folder deleted successfully" })
+  } catch (error) {
+    console.error("❌ ERROR DELETING FOLDER:", error)
+    res.status(500).json({ message: "Server error while deleting folder" })
+  }
+})
+
+// Get documents in a specific folder
+app.get("/api/folders/:id/documents", requireAuth, async (req, res) => {
+  try {
+    const folderId = req.params.id
+    const { limit } = req.query
+
+    // Verify folder ownership
+    const folder = await Folder.findById(folderId)
+    if (!folder) {
+      return res.status(404).json({ message: "Folder not found" })
+    }
+
+    if (folder.createdBy.toString() !== req.session.userId) {
+      return res.status(403).json({ message: "Access denied" })
+    }
+
+    let documentsQuery = Document.find({
+      folderId: folderId,
+      uploadedBy: req.session.userId,
+    })
+      .populate("uploadedBy", "username fullName")
+      .sort({ uploadDate: -1 })
+
+    if (limit) {
+      documentsQuery = documentsQuery.limit(Number.parseInt(limit))
+    }
+
+    const documents = await documentsQuery
+
+    console.log(`📊 Found ${documents.length} documents in folder: ${folder.name}`)
+    res.json({ documents, folder })
+  } catch (error) {
+    console.error("❌ ERROR FETCHING FOLDER DOCUMENTS:", error)
+    res.status(500).json({ message: "Server error while fetching folder documents" })
+  }
+})
+
 // ==================== DOCUMENT ROUTES ====================
 
 app.post("/api/documents", requireAuth, upload.single("document"), async (req, res) => {
@@ -744,19 +969,35 @@ app.post("/api/documents", requireAuth, upload.single("document"), async (req, r
       return res.status(400).json({ message: "No file uploaded or file type not allowed." })
     }
 
-    const { category } = req.body
+    const { category, folderId } = req.body // Added folderId support
 
     if (!category) {
       console.error("❌ UPLOAD ERROR: Category missing")
       return res.status(400).json({ message: "Category is required" })
     }
 
+    // Verify folder ownership if folderId is provided
+    if (folderId) {
+      const folder = await Folder.findById(folderId)
+      if (!folder || folder.createdBy.toString() !== req.session.userId) {
+        return res.status(400).json({ message: "Invalid folder selected" })
+      }
+    }
+
     const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9)
     const fileExtension = path.extname(req.file.originalname)
     const filename = "document-" + uniqueSuffix + fileExtension
 
-    // Create file URL
-    const baseUrl = process.env.BASE_URL || `https://${req.get("host")}`
+    // Create file URL - Use HTTP for localhost, HTTPS for production
+    let baseUrl
+    if (process.env.NODE_ENV === "production") {
+      baseUrl = process.env.BASE_URL || `https://${req.get("host")}`
+    } else {
+      // Development mode - use HTTP for localhost
+      const host = req.get("host")
+      const protocol = host.includes("localhost") ? "http" : "https"
+      baseUrl = process.env.BASE_URL || `${protocol}://${host}`
+    }
     const fileUrl = `${baseUrl}/uploads/${filename}`
 
     console.log("🔗 Generated file URL:", fileUrl)
@@ -768,6 +1009,7 @@ app.post("/api/documents", requireAuth, upload.single("document"), async (req, r
       filePath: process.env.NODE_ENV === "production" ? null : req.file.path,
       fileData: process.env.NODE_ENV === "production" ? req.file.buffer : null,
       category,
+      folderId: folderId || null, // Added folder assignment
       uploadedBy: req.session.userId,
       fileSize: req.file.size,
       mimeType: req.file.mimetype,
@@ -778,6 +1020,9 @@ app.post("/api/documents", requireAuth, upload.single("document"), async (req, r
 
     console.log("✅ Document saved successfully!")
     console.log("🆔 Document ID:", document._id)
+    if (folderId) {
+      console.log("📁 Assigned to folder:", folderId)
+    }
 
     res.status(201).json({
       message: "Document uploaded successfully",
@@ -794,7 +1039,7 @@ app.get("/api/documents", requireAuth, async (req, res) => {
     console.log("=== FETCHING DOCUMENTS ===")
     console.log("User ID:", req.session.userId)
 
-    const { category, limit } = req.query
+    const { category, limit, folderId } = req.query // Added folderId filter
     const query = {}
 
     if (req.session.userRole !== "admin") {
@@ -803,6 +1048,14 @@ app.get("/api/documents", requireAuth, async (req, res) => {
 
     if (category) {
       query.category = category
+    }
+
+    if (folderId === "null" || folderId === "undefined") {
+      // Get documents not in any folder
+      query.folderId = null
+    } else if (folderId) {
+      // Get documents in specific folder
+      query.folderId = folderId
     }
 
     let documentsQuery = Document.find(query).populate("uploadedBy", "username fullName").sort({ uploadDate: -1 })
@@ -819,6 +1072,46 @@ app.get("/api/documents", requireAuth, async (req, res) => {
   } catch (error) {
     console.error("❌ ERROR FETCHING DOCUMENTS:", error)
     res.status(500).json({ message: "Server error while fetching documents" })
+  }
+})
+
+app.put("/api/documents/:id/move", requireAuth, async (req, res) => {
+  try {
+    const { folderId } = req.body
+    const documentId = req.params.id
+
+    const document = await Document.findById(documentId)
+
+    if (!document) {
+      return res.status(404).json({ message: "Document not found" })
+    }
+
+    if (document.uploadedBy.toString() !== req.session.userId) {
+      return res.status(403).json({ message: "Access denied" })
+    }
+
+    // Verify folder ownership if folderId is provided
+    if (folderId) {
+      const folder = await Folder.findById(folderId)
+      if (!folder || folder.createdBy.toString() !== req.session.userId) {
+        return res.status(400).json({ message: "Invalid folder selected" })
+      }
+    }
+
+    const updatedDocument = await Document.findByIdAndUpdate(
+      documentId,
+      { folderId: folderId || null },
+      { new: true },
+    ).populate("uploadedBy", "username fullName")
+
+    console.log(`✅ Document moved: ${document.originalName}`)
+    res.json({
+      message: "Document moved successfully",
+      document: updatedDocument,
+    })
+  } catch (error) {
+    console.error("❌ ERROR MOVING DOCUMENT:", error)
+    res.status(500).json({ message: "Server error while moving document" })
   }
 })
 
@@ -913,7 +1206,19 @@ app.use("*", (req, res) => {
         "GET /api/auth/biometric/status",
         "POST /api/auth/biometric/disable",
       ],
-      documents: ["POST /api/documents", "GET /api/documents", "DELETE /api/documents/:id"],
+      documents: [
+        "POST /api/documents",
+        "GET /api/documents",
+        "DELETE /api/documents/:id",
+        "PUT /api/documents/:id/move",
+      ],
+      folders: [
+        "GET /api/folders",
+        "POST /api/folders",
+        "PUT /api/folders/:id",
+        "DELETE /api/folders/:id",
+        "GET /api/folders/:id/documents",
+      ],
       admin: ["GET /api/admin/users", "GET /api/admin/stats"],
       system: ["GET /", "GET /health", "GET /api/debug/session"],
     },
