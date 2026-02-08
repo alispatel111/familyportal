@@ -9,6 +9,7 @@ const Dashboard = ({ user }) => {
   const [recentDocuments, setRecentDocuments] = useState([])
   const [stats, setStats] = useState({})
   const [loading, setLoading] = useState(true)
+  const [activeFilter, setActiveFilter] = useState("all")
 
   useEffect(() => {
     fetchDashboardData()
@@ -52,240 +53,340 @@ const Dashboard = ({ user }) => {
   }
 
   if (loading) {
-  return (
-    <div className="grid min-h-[80vh] place-items-center bg-gradient-to-br from-indigo-50 via-cyan-50 to-purple-50">
-      <div className="flex flex-col items-center gap-5 p-8 bg-white/90 backdrop-blur-md rounded-3xl shadow-2xl hover:shadow-3xl transition-all duration-700 hover:-translate-y-2 border border-white/20">
-        {/* Main spinner with gradient and pulse effect */}
-        <div className="relative">
-          <div className="h-16 w-16 animate-spin rounded-full border-[3px] border-gray-200 border-t-indigo-500 border-r-cyan-500 transition-all duration-500 hover:scale-110 hover:border-t-indigo-600 hover:border-r-cyan-600 shadow-md"></div>
-          <div className="absolute inset-0 h-16 w-16 animate-ping rounded-full bg-indigo-200/40"></div>
-          <div className="absolute inset-2 h-12 w-12 animate-pulse rounded-full bg-indigo-100/20"></div>
-        </div>
-        
-        {/* Animated dots with sequential fade effect */}
-        <p className="text-lg font-medium text-gray-700 flex items-center animate-pulse">
-          <span className="tracking-wide">Loading your dashboard</span>
-          <span className="flex ml-1">
-            <span className="opacity-0 animate-[fade_1.5s_infinite]">.</span>
-            <span className="opacity-0 animate-[fade_1.5s_infinite_0.2s]">.</span>
-            <span className="opacity-0 animate-[fade_1.5s_infinite_0.4s]">.</span>
-          </span>
-        </p>
-        
-        {/* Subtle progress indicator */}
-        <div className="w-24 h-1.5 bg-gray-200 rounded-full overflow-hidden mt-1">
-          <div className="h-full w-1/3 bg-gradient-to-r from-indigo-400 to-cyan-500 rounded-full animate-[slide_2s_infinite]"></div>
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-blue-50">
+        <div className="text-center animate-fade-in">
+          <div className="relative inline-block">
+            <div className="w-20 h-20 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full animate-pulse"></div>
+            </div>
+          </div>
+          <p className="mt-6 text-gray-600 font-medium animate-pulse">Loading your dashboard...</p>
         </div>
       </div>
-    </div>
-  ) 
-}
+    )
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-cyan-50 to-purple-50 p-6 animate-gradient">
-      {/* Animated background elements */}
-      <div className="fixed -left-40 -top-40 h-80 w-80 animate-float-slow rounded-full bg-gradient-to-r from-indigo-400/20 to-cyan-400/20 blur-3xl"></div>
-      <div className="fixed -right-40 bottom-0 h-80 w-80 animate-float-slower rounded-full bg-gradient-to-r from-cyan-400/20 to-purple-400/20 blur-3xl"></div>
-      
-      <div className="relative space-y-8 max-w-7xl mx-auto">
-        {/* Welcome Section */}
-        <div className="relative overflow-hidden rounded-2xl bg-white/80 backdrop-blur-xl p-8 shadow-2xl animate-slide-in">
-          <div className="absolute -right-6 -top-6 h-32 w-32 animate-pulse-slow rounded-full bg-gradient-to-r from-indigo-500/10 to-cyan-500/10"></div>
-          <div className="absolute -bottom-8 -left-6 h-28 w-28 animate-pulse-slower rounded-full bg-gradient-to-r from-cyan-500/10 to-purple-500/10"></div>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 p-4 md:p-6">
+      <div className="max-w-7xl mx-auto space-y-8 animate-slide-up">
+        {/* Welcome Header */}
+        <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-3xl shadow-2xl p-6 md:p-8 text-white overflow-hidden relative">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -translate-y-32 translate-x-32"></div>
+          <div className="absolute bottom-0 left-0 w-64 h-64 bg-white/10 rounded-full translate-y-32 -translate-x-32"></div>
           
           <div className="relative z-10">
-            <h1 className="text-3xl font-bold text-gray-900 animate-fade-in">
-              <span className="mr-3 inline-flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-r from-indigo-500 to-cyan-500 text-white shadow-lg">
-                <i className="fas fa-home"></i>
-              </span>
-              Welcome back, {user.fullName}!
-            </h1>
-            <p className="mt-2 text-gray-600 animate-fade-in-delay">Manage your family documents securely and efficiently</p>
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+              <div>
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center">
+                    <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h1 className="text-3xl font-bold">Welcome back, {user.fullName}! 👋</h1>
+                    <p className="text-blue-100 mt-2">Manage your family documents securely and efficiently</p>
+                  </div>
+                </div>
+                
+                <div className="flex flex-wrap gap-3 mt-6">
+                  <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/20">
+                    <div className="text-xs text-blue-100">Role</div>
+                    <div className="font-semibold capitalize">{user.role}</div>
+                  </div>
+                  <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/20">
+                    <div className="text-xs text-blue-100">Documents</div>
+                    <div className="font-semibold">{recentDocuments.length}</div>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="flex-shrink-0">
+                <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 border border-white/20">
+                  <div className="text-sm text-blue-100 mb-2">Quick Actions</div>
+                  <Link
+                    to="/upload"
+                    className="inline-flex items-center gap-2 bg-white text-blue-600 font-semibold px-4 py-2 rounded-lg hover:bg-blue-50 transition-colors duration-300"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                    </svg>
+                    Upload Now
+                  </Link>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
         {/* Stats Cards - Admin Only */}
         {user.role === "admin" && (
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 animate-stagger-children">
-            <div className="group relative overflow-hidden rounded-2xl bg-white/90 backdrop-blur-sm p-6 shadow-lg transition-all duration-500 hover:-translate-y-2 hover:shadow-xl">
-              <div className="absolute -right-6 -top-6 h-20 w-20 animate-pulse-slow rounded-full bg-indigo-200/30 transition-all duration-700 group-hover:scale-150"></div>
-              <div className="relative z-10">
-                <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-r from-indigo-500/10 to-cyan-500/10 text-indigo-600">
-                  <i className="fas fa-users text-lg"></i>
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="bg-gradient-to-br from-blue-50 to-white rounded-2xl p-6 border border-blue-100 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 animate-slide-in" style={{animationDelay: "0.1s"}}>
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
+                  <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5 2.204a9 9 0 01-13.5 0" />
+                  </svg>
                 </div>
-                <h3 className="text-sm font-medium text-gray-500">Total Users</h3>
-                <div className="mt-1 text-2xl font-bold text-gray-900 animate-count-up">{stats.totalUsers || 0}</div>
+                <div className="text-right">
+                  <div className="text-sm text-gray-500">Total Users</div>
+                  <div className="text-3xl font-bold text-gray-800">{stats.totalUsers || 0}</div>
+                </div>
               </div>
+              <div className="text-sm text-gray-600">Active family members</div>
             </div>
-            
-            <div className="group relative overflow-hidden rounded-2xl bg-white/90 backdrop-blur-sm p-6 shadow-lg transition-all duration-500 hover:-translate-y-2 hover:shadow-xl">
-              <div className="absolute -right-6 -top-6 h-20 w-20 animate-pulse-slow rounded-full bg-cyan-200/30 transition-all duration-700 group-hover:scale-150"></div>
-              <div className="relative z-10">
-                <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-r from-indigo-500/10 to-cyan-500/10 text-cyan-600">
-                  <i className="fas fa-file-alt text-lg"></i>
+
+            <div className="bg-gradient-to-br from-purple-50 to-white rounded-2xl p-6 border border-purple-100 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 animate-slide-in" style={{animationDelay: "0.2s"}}>
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
+                  <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
                 </div>
-                <h3 className="text-sm font-medium text-gray-500">Total Documents</h3>
-                <div className="mt-1 text-2xl font-bold text-gray-900 animate-count-up">{stats.totalDocuments || 0}</div>
+                <div className="text-right">
+                  <div className="text-sm text-gray-500">Total Documents</div>
+                  <div className="text-3xl font-bold text-gray-800">{stats.totalDocuments || 0}</div>
+                </div>
               </div>
+              <div className="text-sm text-gray-600">Uploaded files</div>
             </div>
-            
-            <div className="group relative overflow-hidden rounded-2xl bg-white/90 backdrop-blur-sm p-6 shadow-lg transition-all duration-500 hover:-translate-y-2 hover:shadow-xl">
-              <div className="absolute -right-6 -top-6 h-20 w-20 animate-pulse-slow rounded-full bg-purple-200/30 transition-all duration-700 group-hover:scale-150"></div>
-              <div className="relative z-10">
-                <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-r from-indigo-500/10 to-cyan-500/10 text-purple-600">
-                  <i className="fas fa-tags text-lg"></i>
+
+            <div className="bg-gradient-to-br from-green-50 to-white rounded-2xl p-6 border border-green-100 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 animate-slide-in" style={{animationDelay: "0.3s"}}>
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
+                  <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                  </svg>
                 </div>
-                <h3 className="text-sm font-medium text-gray-500">Categories</h3>
-                <div className="mt-1 text-2xl font-bold text-gray-900 animate-count-up">{stats.documentsByCategory?.length || 0}</div>
+                <div className="text-right">
+                  <div className="text-sm text-gray-500">Categories</div>
+                  <div className="text-3xl font-bold text-gray-800">{stats.documentsByCategory?.length || 0}</div>
+                </div>
               </div>
+              <div className="text-sm text-gray-600">Document categories</div>
             </div>
           </div>
         )}
 
         {/* Action Buttons */}
-        <div className="flex flex-wrap gap-4 animate-fade-in-up">
-          <Link
-            to="/upload"
-            className="group relative inline-flex items-center gap-3 overflow-hidden rounded-xl bg-gradient-to-r from-indigo-500 to-cyan-500 px-6 py-3.5 font-semibold text-white shadow-lg transition-all duration-500 hover:-translate-y-1 hover:shadow-xl hover:shadow-indigo-500/40"
-          >
-            <span className="relative z-10 flex items-center">
-              <i className="fas fa-cloud-upload-alt mr-2 transition-transform duration-300 group-hover:scale-110"></i>
-              Upload Document
-            </span>
-            <div className="absolute inset-0 h-full w-full bg-gradient-to-r from-indigo-600 to-cyan-600 opacity-0 transition-opacity duration-500 group-hover:opacity-100"></div>
-            <div className="absolute -inset-1 bg-gradient-to-r from-indigo-500 to-cyan-500 blur-md opacity-30 group-hover:opacity-50 transition-opacity duration-500"></div>
-          </Link>
-          
-          <Link
-            to="/my-documents"
-            className="group inline-flex items-center gap-3 rounded-xl border border-gray-200 bg-white/90 backdrop-blur-sm px-6 py-3.5 font-medium text-gray-700 shadow-md transition-all duration-500 hover:-translate-y-1 hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700 hover:shadow-lg"
-          >
-            <i className="fas fa-file-alt text-indigo-500 transition-all duration-300 group-hover:scale-110 group-hover:text-indigo-600"></i>
-            View All Documents
-          </Link>
-          
-          {user.role === "admin" && (
+        <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl p-6 border border-white/40">
+          <h2 className="text-xl font-bold text-gray-800 mb-6">Quick Actions</h2>
+          <div className="flex flex-wrap gap-4">
             <Link
-              to="/admin"
-              className="group relative inline-flex items-center gap-3 overflow-hidden rounded-xl bg-gradient-to-r from-gray-800 to-gray-900 px-6 py-3.5 font-semibold text-white shadow-lg transition-all duration-500 hover:-translate-y-1 hover:shadow-xl hover:shadow-gray-900/40"
+              to="/upload"
+              className="group inline-flex items-center gap-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold px-6 py-3.5 rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300"
             >
-              <span className="relative z-10 flex items-center">
-                <i className="fas fa-cog mr-2 transition-transform duration-300 group-hover:rotate-90"></i>
-                Admin Panel
-              </span>
-              <div className="absolute inset-0 h-full w-full bg-gradient-to-r from-gray-900 to-black opacity-0 transition-opacity duration-500 group-hover:opacity-100"></div>
-              <div className="absolute -inset-1 bg-gradient-to-r from-gray-800 to-gray-900 blur-md opacity-30 group-hover:opacity-50 transition-opacity duration-500"></div>
+              <svg className="w-5 h-5 group-hover:scale-110 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+              </svg>
+              <span>Upload Document</span>
             </Link>
-          )}
+            
+            <Link
+              to="/my-documents"
+              className="group inline-flex items-center gap-3 bg-white border border-gray-300 text-gray-700 font-medium px-6 py-3.5 rounded-xl shadow hover:shadow-md transform hover:-translate-y-0.5 transition-all duration-300 hover:border-blue-300 hover:bg-blue-50"
+            >
+              <svg className="w-5 h-5 text-blue-600 group-hover:scale-110 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              <span>View All Documents</span>
+            </Link>
+            
+            <Link
+              to="/folders"
+              className="group inline-flex items-center gap-3 bg-white border border-gray-300 text-gray-700 font-medium px-6 py-3.5 rounded-xl shadow hover:shadow-md transform hover:-translate-y-0.5 transition-all duration-300 hover:border-green-300 hover:bg-green-50"
+            >
+              <svg className="w-5 h-5 text-green-600 group-hover:scale-110 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+              </svg>
+              <span>Manage Folders</span>
+            </Link>
+            
+            {user.role === "admin" && (
+              <Link
+                to="/admin"
+                className="group inline-flex items-center gap-3 bg-gray-800 text-white font-semibold px-6 py-3.5 rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300"
+              >
+                <svg className="w-5 h-5 group-hover:rotate-90 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                <span>Admin Panel</span>
+              </Link>
+            )}
+          </div>
         </div>
 
         {/* Recent Documents Section */}
-        <div className="overflow-hidden rounded-2xl bg-white/90 backdrop-blur-sm p-8 shadow-2xl transition-all duration-500 hover:shadow-2xl">
-          <h2 className="mb-6 flex items-center text-xl font-bold text-gray-900 animate-fade-in">
-            <span className="mr-3 inline-flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-r from-indigo-500 to-cyan-500 text-white shadow-md">
-              <i className="fas fa-clock"></i>
-            </span>
-            Recent Documents
-          </h2>
+        <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl p-6 md:p-8 border border-white/40">
+          <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
+            <h2 className="text-2xl font-bold text-gray-800">Recent Documents</h2>
+            
+            <div className="flex items-center gap-3">
+              <div className="text-sm text-gray-600">Filter:</div>
+              <div className="flex bg-gray-100 rounded-lg p-1">
+                {["all", "pdf", "image", "document"].map((filter) => (
+                  <button
+                    key={filter}
+                    onClick={() => setActiveFilter(filter)}
+                    className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all duration-300 ${
+                      activeFilter === filter
+                        ? "bg-white text-blue-600 shadow"
+                        : "text-gray-600 hover:text-gray-800"
+                    }`}
+                  >
+                    {filter === "all" ? "All" : 
+                     filter === "pdf" ? "PDF" :
+                     filter === "image" ? "Images" : "Documents"}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
           
           {recentDocuments.length > 0 ? (
-            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 animate-stagger-children">
-              {recentDocuments.map((document, index) => (
-                <div key={document._id} className="animate-fade-in-up" style={{ animationDelay: `${index * 0.1}s` }}>
-                  <DocumentCard
-                    document={document}
-                    onDelete={handleDeleteDocument}
-                    showUser={user.role === "admin"}
-                  />
-                </div>
-              ))}
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {recentDocuments
+                .filter(doc => activeFilter === "all" || doc.type === activeFilter)
+                .map((document, index) => (
+                  <div key={document._id} className="animate-slide-in" style={{animationDelay: `${index * 0.1}s`}}>
+                    <DocumentCard
+                      document={document}
+                      onDelete={handleDeleteDocument}
+                      showUser={user.role === "admin"}
+                    />
+                  </div>
+                ))}
             </div>
           ) : (
-            <div className="grid place-items-center rounded-xl border-2 border-dashed border-gray-300 p-10 text-center transition-all duration-500 hover:border-indigo-300 hover:bg-indigo-50/50">
-              <div className="mb-4 inline-flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-r from-indigo-100 to-cyan-100 text-3xl text-indigo-500 animate-bounce-slow">
-                <i className="fas fa-folder-open"></i>
+            <div className="text-center py-12">
+              <div className="w-24 h-24 bg-gradient-to-r from-blue-100 to-purple-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <svg className="w-12 h-12 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
               </div>
-              <h3 className="text-lg font-semibold text-gray-900">No Documents Yet</h3>
-              <p className="mt-1 text-gray-500">Start by uploading your first document to get organized!</p>
+              <h3 className="text-xl font-semibold text-gray-800 mb-3">No Documents Yet</h3>
+              <p className="text-gray-600 mb-6 max-w-md mx-auto">
+                Start by uploading your first document to organize your family's important files
+              </p>
               <Link
                 to="/upload"
-                className="mt-5 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 to-cyan-500 px-5 py-3 font-medium text-white shadow-md transition-all duration-500 hover:-translate-y-0.5 hover:shadow-lg"
+                className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold px-6 py-3 rounded-lg hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-300"
               >
-                <i className="fas fa-plus"></i>
-                Upload your first document
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                Upload Your First Document
+              </Link>
+            </div>
+          )}
+          
+          {recentDocuments.length > 0 && (
+            <div className="mt-8 pt-6 border-t border-gray-200">
+              <Link
+                to="/my-documents"
+                className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium transition-colors duration-300 group"
+              >
+                <span>View All Documents</span>
+                <svg className="w-4 h-4 transform group-hover:translate-x-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                </svg>
               </Link>
             </div>
           )}
         </div>
+
+        {/* Quick Stats */}
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+          <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow">
+            <div className="text-sm text-gray-500 mb-2">Total Storage</div>
+            <div className="text-2xl font-bold text-gray-800">2.4 GB</div>
+            <div className="w-full bg-gray-200 rounded-full h-2 mt-3">
+              <div className="bg-blue-600 h-2 rounded-full" style={{width: "65%"}}></div>
+            </div>
+          </div>
+          
+          <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow">
+            <div className="text-sm text-gray-500 mb-2">Shared Documents</div>
+            <div className="text-2xl font-bold text-gray-800">14</div>
+            <div className="text-sm text-gray-600 mt-1">With family members</div>
+          </div>
+          
+          <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow">
+            <div className="text-sm text-gray-500 mb-2">Recent Activity</div>
+            <div className="text-2xl font-bold text-gray-800">8</div>
+            <div className="text-sm text-gray-600 mt-1">Last 24 hours</div>
+          </div>
+          
+          <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow">
+            <div className="text-sm text-gray-500 mb-2">Folders</div>
+            <div className="text-2xl font-bold text-gray-800">6</div>
+            <Link to="/folders" className="text-sm text-blue-600 hover:text-blue-700 mt-1 inline-block">
+              Manage folders →
+            </Link>
+          </div>
+        </div>
       </div>
 
-      {/* Add custom styles for animations */}
-      <style jsx>{`
-        @keyframes gradient {
-          0% { background-position: 0% 50%; }
-          50% { background-position: 100% 50%; }
-          100% { background-position: 0% 50%; }
+      <style jsx global>{`
+        @keyframes slide-up {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
         }
-        .animate-gradient {
-          background-size: 200% 200%;
-          animation: gradient 15s ease infinite;
-        }
-        @keyframes float-slow {
-          0%, 100% { transform: translateY(0) rotate(0deg); }
-          50% { transform: translateY(-20px) rotate(5deg); }
-        }
-        @keyframes float-slower {
-          0%, 100% { transform: translateY(0) rotate(0deg); }
-          50% { transform: translateY(15px) rotate(-5deg); }
-        }
-        @keyframes pulse-slow {
-          0%, 100% { opacity: 0.5; transform: scale(1); }
-          50% { opacity: 0.8; transform: scale(1.05); }
-        }
-        @keyframes pulse-slower {
-          0%, 100% { opacity: 0.3; transform: scale(1); }
-          50% { opacity: 0.6; transform: scale(1.1); }
-        }
+        
         @keyframes slide-in {
-          0% { opacity: 0; transform: translateY(30px); }
-          100% { opacity: 1; transform: translateY(0); }
+          from {
+            opacity: 0;
+            transform: translateX(-10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
         }
+        
         @keyframes fade-in {
-          0% { opacity: 0; }
-          100% { opacity: 1; }
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
+          }
         }
-        @keyframes fade-in-up {
-          0% { opacity: 0; transform: translateY(20px); }
-          100% { opacity: 1; transform: translateY(0); }
+        
+        @keyframes pulse {
+          0%, 100% {
+            opacity: 1;
+          }
+          50% {
+            opacity: 0.5;
+          }
         }
-        @keyframes count-up {
-          from { opacity: 0; transform: translateY(10px); }
-          to { opacity: 1; transform: translateY(0); }
+        
+        .animate-slide-up {
+          animation: slide-up 0.6s ease-out;
         }
-        @keyframes bounce-slow {
-          0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
-          40% { transform: translateY(-10px); }
-          60% { transform: translateY(-5px); }
+        
+        .animate-slide-in {
+          animation: slide-in 0.4s ease-out;
         }
-        @keyframes spin-reverse {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(-360deg); }
+        
+        .animate-fade-in {
+          animation: fade-in 0.4s ease-out;
         }
-        .animate-float-slow { animation: float-slow 10s ease-in-out infinite; }
-        .animate-float-slower { animation: float-slower 15s ease-in-out infinite; }
-        .animate-pulse-slow { animation: pulse-slow 6s ease-in-out infinite; }
-        .animate-pulse-slower { animation: pulse-slower 8s ease-in-out infinite; }
-        .animate-slide-in { animation: slide-in 0.8s ease-out; }
-        .animate-fade-in { animation: fade-in 1s ease-out; }
-        .animate-fade-in-delay { animation: fade-in 1s ease-out 0.3s both; }
-        .animate-fade-in-up { animation: fade-in-up 0.8s ease-out; }
-        .animate-count-up { animation: count-up 1s ease-out; }
-        .animate-bounce-slow { animation: bounce-slow 3s infinite; }
-        .animate-spin-reverse { animation: spin-reverse 1.5s linear infinite; }
-        .animate-stagger-children > * { animation: fade-in-up 0.6s ease-out; }
-        .animate-stagger-children > *:nth-child(1) { animation-delay: 0.1s; }
-        .animate-stagger-children > *:nth-child(2) { animation-delay: 0.2s; }
-        .animate-stagger-children > *:nth-child(3) { animation-delay: 0.3s; }
+        
+        .animate-pulse {
+          animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
       `}</style>
     </div>
   )

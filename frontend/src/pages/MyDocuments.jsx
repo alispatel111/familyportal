@@ -8,14 +8,15 @@ import DocumentCard from "../components/DocumentCard"
 const MyDocuments = () => {
   const [documents, setDocuments] = useState([])
   const [filteredDocuments, setFilteredDocuments] = useState([])
-  const [folders, setFolders] = useState([]) // Added folders state
+  const [folders, setFolders] = useState([])
   const [loading, setLoading] = useState(true)
   const [selectedCategory, setSelectedCategory] = useState("")
-  const [selectedFolder, setSelectedFolder] = useState("") // Added folder filter state
+  const [selectedFolder, setSelectedFolder] = useState("")
   const [searchTerm, setSearchTerm] = useState("")
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
-  const [isFolderDropdownOpen, setIsFolderDropdownOpen] = useState(false) // Added folder dropdown state
-  const [searchParams] = useSearchParams() // Added URL params support
+  const [isFolderDropdownOpen, setIsFolderDropdownOpen] = useState(false)
+  const [viewMode, setViewMode] = useState("grid") // "grid" or "list"
+  const [searchParams] = useSearchParams()
 
   const categories = [
     "All",
@@ -56,11 +57,7 @@ const MyDocuments = () => {
 
   const fetchDocuments = async () => {
     try {
-      console.log("=== FETCHING MY DOCUMENTS ===")
       const response = await axios.get("/api/documents")
-      console.log("📊 API Response:", response.data)
-      console.log("📄 Documents received:", response.data.documents.length)
-
       setDocuments(response.data.documents)
     } catch (error) {
       console.error("❌ Error fetching documents:", error)
@@ -116,7 +113,6 @@ const MyDocuments = () => {
     try {
       await axios.put(`/api/documents/${documentId}/move`, { folderId: newFolderId })
 
-      // Update local state
       setDocuments((prev) =>
         prev.map((doc) => (doc._id === documentId ? { ...doc, folderId: newFolderId || null } : doc)),
       )
@@ -136,22 +132,10 @@ const MyDocuments = () => {
     setSearchTerm("")
   }
 
-  const toggleDropdown = () => {
-    setIsDropdownOpen(!isDropdownOpen)
-  }
-
-  const toggleFolderDropdown = () => {
-    setIsFolderDropdownOpen(!isFolderDropdownOpen)
-  }
-
-  const selectCategory = (category) => {
-    setSelectedCategory(category === "All" ? "" : category)
-    setIsDropdownOpen(false)
-  }
-
-  const selectFolder = (folderId) => {
-    setSelectedFolder(folderId === "all" ? "" : folderId)
-    setIsFolderDropdownOpen(false)
+  const clearFilters = () => {
+    setSelectedCategory("")
+    setSelectedFolder("")
+    setSearchTerm("")
   }
 
   const getFolderName = (folderId) => {
@@ -164,252 +148,371 @@ const MyDocuments = () => {
 
   if (loading) {
     return (
-      <div className="min-h-[60vh] flex items-center justify-center">
-        <div className="flex flex-col items-center">
-          {/* Enhanced Spinner with Dual-ring Animation */}
-          <div className="relative w-20 h-20">
-            <div className="absolute inset-0 border-4 border-blue-200 rounded-full"></div>
-            <div className="absolute inset-0 border-4 border-transparent rounded-full border-t-brand border-r-brand animate-spin"></div>
-            <div className="absolute inset-2 border-4 border-transparent rounded-full border-b-brand border-l-brand animate-spin-reverse"></div>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-blue-50">
+        <div className="text-center animate-fade-in">
+          <div className="relative inline-block">
+            <div className="w-20 h-20 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
             <div className="absolute inset-0 flex items-center justify-center">
-              <i className="fas fa-file text-brand text-xl"></i>
+              <svg className="w-10 h-10 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
             </div>
           </div>
-          <p className="mt-4 text-gray-600 font-medium animate-pulse">Loading your documents...</p>
+          <p className="mt-6 text-gray-600 font-medium animate-pulse">Loading your documents...</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="space-y-8 animate-fadeIn">
-      {/* Header Section */}
-      <div className="rounded-2xl bg-gradient-to-r from-blue-50 to-indigo-50 p-6 shadow-lg transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center">
-            <div className="flex items-center justify-center w-12 h-12 bg-white rounded-lg shadow-sm transition-all duration-300 hover:scale-110">
-              <i className="fas fa-file-alt text-2xl text-brand"></i>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 p-4 md:p-6">
+      <div className="max-w-7xl mx-auto space-y-8 animate-slide-up">
+        {/* Header */}
+        <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-3xl shadow-2xl p-6 md:p-8 text-white overflow-hidden relative">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -translate-y-32 translate-x-32"></div>
+          <div className="absolute bottom-0 left-0 w-64 h-64 bg-white/10 rounded-full translate-y-32 -translate-x-32"></div>
+          
+          <div className="relative z-10">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+              <div>
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center">
+                    <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h1 className="text-3xl font-bold">My Documents</h1>
+                    <p className="text-blue-100 mt-2">Manage and organize your uploaded documents securely</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-4">
+                  <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/20">
+                    <div className="text-xs text-blue-100">Total Documents</div>
+                    <div className="font-semibold">{documents.length}</div>
+                  </div>
+                  <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/20">
+                    <div className="text-xs text-blue-100">Filtered</div>
+                    <div className="font-semibold">{filteredDocuments.length}</div>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="flex flex-col sm:flex-row gap-4">
+                <Link
+                  to="/folders"
+                  className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm text-white px-5 py-2.5 rounded-xl hover:bg-white/30 transition-all duration-300 border border-white/20"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                  </svg>
+                  Manage Folders
+                </Link>
+                <Link
+                  to="/upload"
+                  className="inline-flex items-center gap-2 bg-white text-blue-600 font-semibold px-5 py-2.5 rounded-xl hover:bg-blue-50 shadow-lg hover:shadow-xl transition-all duration-300"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                  Upload New
+                </Link>
+              </div>
             </div>
-            <div className="ml-4">
-              <h1 className="text-2xl md:text-3xl font-bold text-gray-900">My Documents</h1>
-              <p className="mt-1 text-sm text-gray-600">Manage and organize your uploaded documents securely</p>
-            </div>
-          </div>
-          <div className="flex gap-2">
-            <Link
-              to="/folders"
-              className="inline-flex items-center gap-2 rounded-lg bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 transition-all duration-200"
-            >
-              <i className="fas fa-folder"></i>
-              Manage Folders
-            </Link>
-            <Link
-              to="/upload"
-              className="inline-flex items-center gap-2 rounded-lg bg-brand px-3 py-2 text-sm font-medium text-white hover:bg-brand-hover transition-all duration-200"
-            >
-              <i className="fas fa-plus"></i>
-              Upload
-            </Link>
           </div>
         </div>
-      </div>
 
-      {/* Search and Filter Section */}
-      <div className="grid gap-6 rounded-2xl bg-white p-6 shadow-card md:grid-cols-3 transition-all duration-300 hover:shadow-lg">
-        <div className="space-y-2">
-          <label htmlFor="search" className="block text-sm font-medium text-gray-700">
-            <i className="fas fa-search mr-2 text-gray-400"></i>
-            Search Documents
-          </label>
-          <div className="relative">
-            <input
-              id="search"
-              type="text"
-              placeholder="Search by name or category..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-gray-900 placeholder-gray-400 outline-none transition-all duration-300 focus:border-brand focus:ring-2 focus:ring-brand/20"
-            />
-            {searchTerm && (
+        {/* Search and Filters */}
+        <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl p-6 border border-white/40">
+          <div className="flex flex-col lg:flex-row gap-6">
+            {/* Search Bar */}
+            <div className="flex-1">
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Search documents by name or category..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-12 pr-10 py-3.5 bg-gray-50 border border-gray-300 rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+                <svg className="w-5 h-5 text-gray-400 absolute left-4 top-1/2 transform -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                {searchTerm && (
+                  <button
+                    onClick={clearSearch}
+                    className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* View Toggle */}
+            <div className="flex items-center gap-4">
+              <div className="flex bg-gray-100 rounded-lg p-1">
+                <button
+                  onClick={() => setViewMode("grid")}
+                  className={`p-2 rounded-md transition-all duration-300 ${
+                    viewMode === "grid" ? "bg-white text-blue-600 shadow" : "text-gray-600 hover:text-gray-800"
+                  }`}
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                  </svg>
+                </button>
+                <button
+                  onClick={() => setViewMode("list")}
+                  className={`p-2 rounded-md transition-all duration-300 ${
+                    viewMode === "list" ? "bg-white text-blue-600 shadow" : "text-gray-600 hover:text-gray-800"
+                  }`}
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
+                  </svg>
+                </button>
+              </div>
+
               <button
-                onClick={clearSearch}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-brand transition-colors duration-200"
+                onClick={clearFilters}
+                className="px-4 py-2.5 text-sm font-medium text-gray-600 hover:text-gray-800 transition-colors duration-300"
               >
-                <i className="fas fa-times-circle"></i>
+                Clear Filters
               </button>
-            )}
+            </div>
           </div>
-        </div>
 
-        <div className="space-y-2">
-          <label className="block text-sm font-medium text-gray-700">
-            <i className="fas fa-folder mr-2 text-gray-400"></i>
-            Filter by Folder
-          </label>
-          <div className="relative">
-            <button
-              onClick={toggleFolderDropdown}
-              className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-left text-gray-900 outline-none transition-all duration-300 flex items-center justify-between hover:border-brand focus:border-brand focus:ring-2 focus:ring-brand/20"
-            >
-              <span>{getFolderName(selectedFolder) || "All Folders"}</span>
-              <i
-                className={`fas fa-chevron-${isFolderDropdownOpen ? "up" : "down"} text-sm transition-transform duration-300`}
-              ></i>
-            </button>
-
-            {isFolderDropdownOpen && (
-              <div className="absolute z-10 w-full mt-2 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden animate-dropdownFade">
-                <div
-                  onClick={() => selectFolder("all")}
-                  className={`px-4 py-3 cursor-pointer transition-all duration-200 hover:bg-blue-50 hover:pl-6 ${
-                    !selectedFolder ? "bg-brand/10 text-brand font-medium" : "text-gray-700"
-                  }`}
+          {/* Filter Dropdowns */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Filter by Category</label>
+              <div className="relative">
+                <select
+                  value={selectedCategory}
+                  onChange={(e) => setSelectedCategory(e.target.value)}
+                  className="w-full px-4 py-3.5 bg-gray-50 border border-gray-300 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none"
                 >
-                  📁 All Folders
+                  <option value="">All Categories</option>
+                  {categories.map((category) => (
+                    <option key={category} value={category === "All" ? "" : category}>
+                      {category}
+                    </option>
+                  ))}
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-700">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                  </svg>
                 </div>
-                <div
-                  onClick={() => selectFolder("no-folder")}
-                  className={`px-4 py-3 cursor-pointer transition-all duration-200 hover:bg-blue-50 hover:pl-6 ${
-                    selectedFolder === "no-folder" ? "bg-brand/10 text-brand font-medium" : "text-gray-700"
-                  }`}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Filter by Folder</label>
+              <div className="relative">
+                <select
+                  value={selectedFolder}
+                  onChange={(e) => setSelectedFolder(e.target.value)}
+                  className="w-full px-4 py-3.5 bg-gray-50 border border-gray-300 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none"
                 >
-                  📄 No Folder
+                  <option value="">All Folders</option>
+                  <option value="no-folder">No Folder</option>
+                  {folders.map((folder) => (
+                    <option key={folder._id} value={folder._id}>
+                      {folder.name}
+                    </option>
+                  ))}
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-700">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                  </svg>
                 </div>
-                {folders.map((folder) => (
-                  <div
-                    key={folder._id}
-                    onClick={() => selectFolder(folder._id)}
-                    className={`px-4 py-3 cursor-pointer transition-all duration-200 hover:bg-blue-50 hover:pl-6 ${
-                      selectedFolder === folder._id ? "bg-brand/10 text-brand font-medium" : "text-gray-700"
-                    }`}
-                  >
-                    📁 {folder.name}
-                  </div>
-                ))}
               </div>
-            )}
+            </div>
           </div>
         </div>
 
-        <div className="space-y-2">
-          <label className="block text-sm font-medium text-gray-700">
-            <i className="fas fa-filter mr-2 text-gray-400"></i>
-            Filter by Category
-          </label>
-          <div className="relative">
-            {/* Custom Dropdown Button */}
-            <button
-              onClick={toggleDropdown}
-              className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-left text-gray-900 outline-none transition-all duration-300 flex items-center justify-between hover:border-brand focus:border-brand focus:ring-2 focus:ring-brand/20"
-            >
-              <span>{selectedCategory || "All Categories"}</span>
-              <i
-                className={`fas fa-chevron-${isDropdownOpen ? "up" : "down"} text-sm transition-transform duration-300`}
-              ></i>
-            </button>
-
-            {/* Custom Dropdown Options */}
-            {isDropdownOpen && (
-              <div className="absolute z-10 w-full mt-2 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden animate-dropdownFade">
-                {categories.map((category) => (
-                  <div
-                    key={category}
-                    onClick={() => selectCategory(category)}
-                    className={`px-4 py-3 cursor-pointer transition-all duration-200 hover:bg-blue-50 hover:pl-6 ${
-                      selectedCategory === category || (!selectedCategory && category === "All")
-                        ? "bg-brand/10 text-brand font-medium"
-                        : "text-gray-700"
-                    }`}
-                  >
-                    {category}
-                  </div>
-                ))}
-              </div>
-            )}
+        {/* Results Summary */}
+        <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-800">
+                Showing {filteredDocuments.length} of {documents.length} documents
+              </h3>
+              {(selectedFolder || selectedCategory || searchTerm) && (
+                <div className="flex items-center gap-2 mt-2">
+                  <span className="text-sm text-gray-600">Active filters:</span>
+                  {selectedCategory && (
+                    <span className="inline-flex items-center gap-1 bg-blue-100 text-blue-800 text-xs px-3 py-1 rounded-full">
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                      </svg>
+                      {selectedCategory}
+                    </span>
+                  )}
+                  {selectedFolder && (
+                    <span className="inline-flex items-center gap-1 bg-green-100 text-green-800 text-xs px-3 py-1 rounded-full">
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                      </svg>
+                      {getFolderName(selectedFolder)}
+                    </span>
+                  )}
+                  {searchTerm && (
+                    <span className="inline-flex items-center gap-1 bg-purple-100 text-purple-800 text-xs px-3 py-1 rounded-full">
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                      </svg>
+                      "{searchTerm}"
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Results Count */}
-      <div className="flex items-center text-sm text-gray-600 bg-white p-3 rounded-lg shadow-sm transition-all duration-300 hover:shadow-md">
-        <i className="fas fa-chart-pie mr-2 text-brand"></i>
-        Showing <span className="font-semibold mx-1">{filteredDocuments.length}</span> of{" "}
-        <span className="font-semibold mx-1">{documents.length}</span> documents
-        {(selectedFolder || selectedCategory) && (
-          <span className="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
-            {selectedFolder && selectedFolder !== "all" && `📁 ${getFolderName(selectedFolder)}`}
-            {selectedFolder && selectedCategory && " • "}
-            {selectedCategory && `🏷️ ${selectedCategory}`}
-          </span>
+        {/* Documents Grid/List */}
+        {filteredDocuments.length > 0 ? (
+          viewMode === "grid" ? (
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {filteredDocuments.map((document, index) => (
+                <div key={document._id} className="animate-slide-in" style={{animationDelay: `${index * 0.1}s`}}>
+                  <DocumentCard
+                    document={document}
+                    onDelete={handleDeleteDocument}
+                    onMove={handleMoveDocument}
+                    folders={folders}
+                    showUser={false}
+                  />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {filteredDocuments.map((document, index) => (
+                <div key={document._id} className="animate-slide-in" style={{animationDelay: `${index * 0.1}s`}}>
+                  <DocumentCard
+                    document={document}
+                    onDelete={handleDeleteDocument}
+                    onMove={handleMoveDocument}
+                    folders={folders}
+                    showUser={false}
+                    listView={true}
+                  />
+                </div>
+              ))}
+            </div>
+          )
+        ) : (
+          <div className="text-center py-16 bg-white rounded-3xl shadow-2xl border border-gray-200">
+            <div className="w-32 h-32 bg-gradient-to-r from-blue-100 to-purple-100 rounded-full flex items-center justify-center mx-auto mb-8">
+              <svg className="w-16 h-16 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <h3 className="text-2xl font-bold text-gray-800 mb-4">No Documents Found</h3>
+            <p className="text-gray-600 mb-8 max-w-md mx-auto">
+              {searchTerm || selectedCategory || selectedFolder
+                ? "No documents match your search criteria. Try adjusting your filters or search term."
+                : "You haven't uploaded any documents yet. Start by uploading your first document."}
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              {searchTerm || selectedCategory || selectedFolder ? (
+                <button
+                  onClick={clearFilters}
+                  className="inline-flex items-center gap-2 bg-gray-800 text-white font-semibold px-6 py-3 rounded-xl hover:bg-gray-900 transition-all duration-300"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                  Clear All Filters
+                </button>
+              ) : (
+                <Link
+                  to="/upload"
+                  className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold px-6 py-3 rounded-xl hover:shadow-lg transition-all duration-300"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                  Upload Your First Document
+                </Link>
+              )}
+              <Link
+                to="/folders"
+                className="inline-flex items-center gap-2 bg-white border border-gray-300 text-gray-700 font-medium px-6 py-3 rounded-xl hover:bg-gray-50 transition-all duration-300"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                </svg>
+                Manage Folders
+              </Link>
+            </div>
+          </div>
         )}
       </div>
 
-      {/* Documents Grid */}
-      {filteredDocuments.length > 0 ? (
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {filteredDocuments.map((document) => (
-            <DocumentCard
-              key={document._id}
-              document={document}
-              onDelete={handleDeleteDocument}
-              onMove={handleMoveDocument} // Added move handler
-              folders={folders} // Pass folders for move functionality
-              showUser={false}
-            />
-          ))}
-        </div>
-      ) : (
-        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-gray-300 p-12 text-center transition-all duration-300 hover:border-brand/50 hover:bg-blue-50/50">
-          <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mb-6 transition-all duration-300 hover:scale-110">
-            <i className="fas fa-search text-3xl text-brand"></i>
-          </div>
-          <h3 className="text-xl font-semibold text-gray-900 mb-2">No Documents Found</h3>
-          <p className="text-gray-600 max-w-md mx-auto">
-            {searchTerm || selectedCategory || selectedFolder
-              ? "No documents match your search criteria. Try adjusting your filters."
-              : "You haven't uploaded any documents yet. Start by uploading your first document."}
-          </p>
-          {!searchTerm && !selectedCategory && !selectedFolder && (
-            <Link
-              to="/upload"
-              className="mt-6 inline-flex items-center gap-2 rounded-xl bg-brand px-5 py-3 text-sm font-semibold text-white transition-all duration-300 hover:bg-brand-hover hover:shadow-lg hover:-translate-y-0.5"
-            >
-              <i className="fas fa-plus"></i>
-              Upload your first document
-            </Link>
-          )}
-        </div>
-      )}
-
-      {/* Add custom animations */}
-      <style jsx>{`
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(10px); }
-          to { opacity: 1; transform: translateY(0); }
+      <style jsx global>{`
+        @keyframes slide-up {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
         }
-        @keyframes dropdownFade {
-          from { opacity: 0; transform: translateY(-10px); }
-          to { opacity: 1; transform: translateY(0); }
+        
+        @keyframes slide-in {
+          from {
+            opacity: 0;
+            transform: translateX(-10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
         }
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
+        
+        @keyframes fade-in {
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
+          }
         }
-        @keyframes spin-reverse {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(-360deg); }
+        
+        @keyframes pulse {
+          0%, 100% {
+            opacity: 1;
+          }
+          50% {
+            opacity: 0.5;
+          }
         }
-        .animate-fadeIn {
-          animation: fadeIn 0.5s ease-out;
+        
+        .animate-slide-up {
+          animation: slide-up 0.6s ease-out;
         }
-        .animate-dropdownFade {
-          animation: dropdownFade 0.2s ease-out;
+        
+        .animate-slide-in {
+          animation: slide-in 0.4s ease-out;
         }
-        .animate-spin {
-          animation: spin 1.5s linear infinite;
+        
+        .animate-fade-in {
+          animation: fade-in 0.4s ease-out;
         }
-        .animate-spin-reverse {
-          animation: spin-reverse 1.2s linear infinite;
+        
+        .animate-pulse {
+          animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
         }
       `}</style>
     </div>

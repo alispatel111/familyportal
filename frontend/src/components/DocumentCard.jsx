@@ -1,17 +1,21 @@
 "use client"
 
 import { useState } from "react"
+import { motion } from "framer-motion"
 
 const DocumentCard = ({ document, onDelete, onMove, folders = [], showUser = false }) => {
   const [isHovered, setIsHovered] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
-  const [showMoveMenu, setShowMoveMenu] = useState(false) // Added move menu state
+  const [showMoveMenu, setShowMoveMenu] = useState(false)
+  const [showActions, setShowActions] = useState(false)
 
   const getFileIcon = (mimeType) => {
-    if (mimeType?.includes("pdf")) return "fas fa-file-pdf"
-    if (mimeType?.includes("image")) return "fas fa-file-image"
-    if (mimeType?.includes("document")) return "fas fa-file-word"
-    return "fas fa-file"
+    if (mimeType?.includes("pdf")) return "📄"
+    if (mimeType?.includes("image")) return "🖼️"
+    if (mimeType?.includes("document") || mimeType?.includes("word")) return "📝"
+    if (mimeType?.includes("spreadsheet") || mimeType?.includes("excel")) return "📊"
+    if (mimeType?.includes("presentation") || mimeType?.includes("powerpoint")) return "📽️"
+    return "📁"
   }
 
   const formatFileSize = (bytes) => {
@@ -23,31 +27,31 @@ const DocumentCard = ({ document, onDelete, onMove, folders = [], showUser = fal
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString("en-US", {
-      year: "numeric",
       month: "short",
       day: "numeric",
+      year: "numeric",
     })
   }
 
   const getCategoryStyle = (category) => {
     const styles = {
       "pan card": {
-        bg: "linear-gradient(to right, rgba(239, 68, 68, 0.15), rgba(249, 115, 22, 0.15))",
+        bg: "from-red-50 to-orange-50",
+        border: "border-red-200",
         text: "text-red-700",
-        icon: "fas fa-id-card",
-        iconColor: "text-red-500",
+        icon: "🆔",
       },
       insurance: {
-        bg: "linear-gradient(to right, rgba(34, 197, 94, 0.15), rgba(101, 163, 13, 0.15))",
+        bg: "from-green-50 to-emerald-50",
+        border: "border-green-200",
         text: "text-green-700",
-        icon: "fas fa-shield-alt",
-        iconColor: "text-green-500",
+        icon: "🛡️",
       },
       default: {
-        bg: "linear-gradient(to right, rgba(99, 102, 241, 0.15), rgba(6, 182, 212, 0.15))",
-        text: "text-indigo-700",
-        icon: "fas fa-tag",
-        iconColor: "text-indigo-500",
+        bg: "from-blue-50 to-indigo-50",
+        border: "border-blue-200",
+        text: "text-blue-700",
+        icon: "📁",
       },
     }
 
@@ -123,191 +127,245 @@ const DocumentCard = ({ document, onDelete, onMove, folders = [], showUser = fal
   const categoryStyle = getCategoryStyle(document.category)
 
   return (
-    <div
-      className={`relative overflow-hidden rounded-xl bg-white p-4 shadow-lg transition-all duration-500 ${isHovered ? "shadow-xl -translate-y-1" : "shadow-md"} ${isDeleting ? "opacity-0 scale-95" : "opacity-100 scale-100"} w-full h-full`}
+    <motion.div
+      initial={{ opacity: 0, scale: 0.9, y: 20 }}
+      animate={{ 
+        opacity: isDeleting ? 0 : 1, 
+        scale: isDeleting ? 0.9 : 1,
+        y: 0 
+      }}
+      transition={{ duration: 0.3 }}
+      whileHover={{ y: -5 }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      style={{
-        background: "linear-gradient(to bottom right, #f0f9ff, #e0f2fe, #faf5ff)",
-        border: "1px solid rgba(229, 231, 235, 0.8)",
-      }}
+      className="relative group"
     >
-      {/* Animated background effect */}
-      <div
-        className="absolute inset-0 opacity-0 transition-opacity duration-500"
-        style={{
-          background: "linear-gradient(to right, #818cf8, #06b6d4, #a855f7)",
-          opacity: isHovered ? 0.05 : 0,
-        }}
-      ></div>
+      {/* Card Container */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-white to-gray-50 border border-gray-200 shadow-lg transition-all duration-500 hover:shadow-2xl">
+        {/* Background glow effect */}
+        <motion.div
+          initial={false}
+          animate={{ 
+            opacity: isHovered ? 0.1 : 0,
+            scale: isHovered ? 1 : 0.8 
+          }}
+          className="absolute inset-0 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 blur-xl"
+        />
 
-      {/* Floating particles animation */}
-      {isHovered && (
-        <>
-          <div className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-indigo-400 opacity-70 animate-ping"></div>
-          <div
-            className="absolute -bottom-1 -left-1 w-2 h-2 rounded-full bg-cyan-400 opacity-70 animate-ping"
-            style={{ animationDelay: "0.2s" }}
-          ></div>
-        </>
-      )}
-
-      <div className="relative flex flex-col h-full">
-        <div className="flex items-start gap-3 flex-grow">
-          {/* File icon with enhanced animation */}
-          <div className="flex-shrink-0">
-            <div
-              className={`flex h-12 w-12 items-center justify-center rounded-lg text-white shadow-md transition-all duration-500 ${isHovered ? "scale-110 rotate-3" : "scale-100 rotate-0"}`}
-              style={{
-                background: "linear-gradient(to right, #6366f1, #06b6d4)",
-                boxShadow: isHovered
-                  ? "0 8px 20px -5px rgba(99, 102, 241, 0.4), 0 4px 8px -5px rgba(6, 182, 212, 0.4)"
-                  : "0 4px 6px -1px rgba(99, 102, 241, 0.3), 0 2px 4px -1px rgba(6, 182, 212, 0.3)",
-              }}
-            >
-              <i className={`${getFileIcon(document.mimeType)} text-lg`}></i>
-            </div>
-          </div>
-
-          <div className="flex-1 min-w-0">
-            <h3 className="text-base font-bold text-gray-800 transition-all duration-500 line-clamp-2 leading-tight">
-              {document.originalName}
-            </h3>
-
-            <div
-              className="mt-1.5 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium transition-all duration-500"
-              style={{ background: categoryStyle.bg }}
-            >
-              <i className={`${categoryStyle.icon} ${categoryStyle.iconColor} text-xs`}></i>
-              <span className={categoryStyle.text}>{document.category || "Document"}</span>
-            </div>
-
-            <div className="mt-2.5 flex flex-wrap gap-2 text-xs text-gray-600">
-              {showUser && document.uploadedBy && (
-                <div className="inline-flex items-center gap-1 transition-all duration-300 hover:text-gray-800">
-                  <i className="fas fa-user text-gray-500 text-xs"></i>
-                  <span className="truncate max-w-[80px]">{document.uploadedBy.fullName}</span>
-                </div>
-              )}
-              <div className="inline-flex items-center gap-1 transition-all duration-300 hover:text-gray-800">
-                <i className="fas fa-calendar text-gray-500 text-xs"></i>
-                {formatDate(document.uploadDate)}
-              </div>
-              <div className="inline-flex items-center gap-1 transition-all duration-300 hover:text-gray-800">
-                <i className="fas fa-weight-hanging text-gray-500 text-xs"></i>
-                {formatFileSize(document.fileSize)}
+        {/* Main content */}
+        <div className="relative p-6">
+          {/* Header with icon and actions */}
+          <div className="flex items-start justify-between mb-4">
+            <div className="flex items-center space-x-4">
+              <motion.div
+                whileHover={{ rotate: 10, scale: 1.1 }}
+                className={`flex h-14 w-14 items-center justify-center rounded-xl ${categoryStyle.bg} ${categoryStyle.border} shadow-lg`}
+              >
+                <span className="text-2xl">{getFileIcon(document.mimeType)}</span>
+              </motion.div>
+              
+              <div className="flex-1 min-w-0">
+                <h3 className="text-lg font-bold text-gray-900 truncate">
+                  {document.originalName}
+                </h3>
+                <p className="text-sm text-gray-500 mt-1">
+                  {formatFileSize(document.fileSize)} • {formatDate(document.uploadDate)}
+                </p>
               </div>
             </div>
-          </div>
-        </div>
 
-        {/* Horizontal action buttons - positioned at bottom */}
-        <div className="flex justify-between items-center mt-3 pt-3 border-t border-gray-100">
-          <div className="text-xs text-gray-500">{formatDate(document.uploadDate)}</div>
+            {/* Quick action menu */}
+            <div className="relative">
+              <button
+                onClick={() => setShowActions(!showActions)}
+                className="p-2 rounded-lg hover:bg-gray-100 transition-colors duration-200"
+              >
+                <span className="text-gray-500">⋯</span>
+              </button>
 
-          <div className="flex gap-2">
-            <button
-              onClick={handleView}
-              className="group flex items-center justify-center rounded-lg p-2.5 text-white shadow-md transition-all duration-300 hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
-              style={{
-                background: "linear-gradient(to right, #6366f1, #06b6d4)",
-                boxShadow: "0 3px 5px -1px rgba(99, 102, 241, 0.4), 0 1px 3px -1px rgba(6, 182, 212, 0.4)",
-              }}
-              title="View document"
-            >
-              <i className="fas fa-eye text-sm"></i>
-            </button>
-            <button
-              onClick={handleDownload}
-              className="group flex items-center justify-center rounded-lg border border-gray-300 bg-white p-2.5 text-gray-700 shadow-sm transition-all duration-300 hover:scale-110 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
-              style={{
-                boxShadow: "0 1px 3px rgba(0, 0, 0, 0.05)",
-              }}
-              title="Download document"
-            >
-              <i className="fas fa-download text-sm"></i>
-            </button>
-
-            {/* Move button - only show if folders exist and onMove is provided */}
-            {onMove && folders.length > 0 && (
-              <div className="relative">
-                <button
-                  onClick={toggleMoveMenu}
-                  className="group flex items-center justify-center rounded-lg p-2.5 text-white shadow-md transition-all duration-300 hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500"
-                  style={{
-                    background: "linear-gradient(to right, #10b981, #059669)",
-                    boxShadow: "0 3px 5px -1px rgba(16, 185, 129, 0.4), 0 1px 3px -1px rgba(5, 150, 105, 0.4)",
-                  }}
-                  title="Move to folder"
+              {showActions && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="absolute right-0 top-full mt-2 w-48 bg-white rounded-xl shadow-2xl border border-gray-200 z-50"
                 >
-                  <i className="fas fa-folder-open text-sm"></i>
-                </button>
+                  <button
+                    onClick={handleView}
+                    className="w-full px-4 py-3 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center space-x-3"
+                  >
+                    <span>👁️</span>
+                    <span>View Document</span>
+                  </button>
+                  <button
+                    onClick={handleDownload}
+                    className="w-full px-4 py-3 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center space-x-3"
+                  >
+                    <span>⬇️</span>
+                    <span>Download</span>
+                  </button>
+                  {onMove && folders.length > 0 && (
+                    <button
+                      onClick={toggleMoveMenu}
+                      className="w-full px-4 py-3 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center space-x-3"
+                    >
+                      <span>📂</span>
+                      <span>Move to Folder</span>
+                    </button>
+                  )}
+                  <button
+                    onClick={handleDelete}
+                    className="w-full px-4 py-3 text-left text-sm text-red-600 hover:bg-red-50 flex items-center space-x-3 rounded-b-xl"
+                  >
+                    <span>🗑️</span>
+                    <span>Delete</span>
+                  </button>
+                </motion.div>
+              )}
+            </div>
+          </div>
 
-                {/* Move menu dropdown */}
-                {showMoveMenu && (
-                  <div className="absolute bottom-full right-0 mb-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-10 animate-fadeIn">
-                    <div className="p-2">
-                      <div className="text-xs font-medium text-gray-700 px-2 py-1 border-b border-gray-100">
-                        Move to folder:
-                      </div>
-                      <button
-                        onClick={() => handleMove(null)}
-                        className="w-full text-left px-2 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded transition-colors duration-200"
-                      >
-                        📄 No Folder
-                      </button>
-                      {folders.map((folder) => (
-                        <button
-                          key={folder._id}
-                          onClick={() => handleMove(folder._id)}
-                          className="w-full text-left px-2 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded transition-colors duration-200"
-                        >
-                          📁 {folder.name}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
+          {/* Category badge */}
+          <motion.div
+            initial={false}
+            animate={{ scale: isHovered ? 1.05 : 1 }}
+            className={`inline-flex items-center space-x-2 rounded-full px-4 py-2 ${categoryStyle.bg} ${categoryStyle.border} mb-4`}
+          >
+            <span className="text-sm">{categoryStyle.icon}</span>
+            <span className={`text-sm font-semibold ${categoryStyle.text}`}>
+              {document.category || "Document"}
+            </span>
+          </motion.div>
+
+          {/* User info if enabled */}
+          {showUser && document.uploadedBy && (
+            <div className="flex items-center space-x-3 mb-4 p-3 rounded-lg bg-gray-50/50">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-r from-blue-400 to-purple-400 text-white text-xs font-bold">
+                {document.uploadedBy.fullName?.charAt(0) || "U"}
               </div>
-            )}
+              <div>
+                <p className="text-sm font-medium text-gray-700">{document.uploadedBy.fullName}</p>
+                <p className="text-xs text-gray-500">Uploaded by</p>
+              </div>
+            </div>
+          )}
 
-            <button
-              onClick={handleDelete}
-              className="group flex items-center justify-center rounded-lg p-2.5 text-white shadow-md transition-all duration-300 hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
-              style={{
-                background: "linear-gradient(to right, #EF4444, #DC2626)",
-                boxShadow: "0 3px 5px -1px rgba(239, 68, 68, 0.4), 0 1px 3px -1px rgba(220, 38, 38, 0.4)",
-              }}
-              title="Delete document"
+          {/* File details grid */}
+          <div className="grid grid-cols-2 gap-3 mb-4">
+            <div className="rounded-lg bg-gray-50/50 p-3">
+              <p className="text-xs text-gray-500 mb-1">Type</p>
+              <p className="text-sm font-medium text-gray-800">
+                {document.mimeType?.split('/')[1]?.toUpperCase() || "FILE"}
+              </p>
+            </div>
+            <div className="rounded-lg bg-gray-50/50 p-3">
+              <p className="text-xs text-gray-500 mb-1">Uploaded</p>
+              <p className="text-sm font-medium text-gray-800">
+                {formatDate(document.uploadDate)}
+              </p>
+            </div>
+          </div>
+
+          {/* Action buttons */}
+          <div className="flex space-x-2">
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={handleView}
+              className="flex-1 rounded-xl bg-gradient-to-r from-blue-500 to-purple-500 px-4 py-3 text-white font-medium shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center space-x-2"
             >
-              <i className="fas fa-trash text-sm"></i>
-            </button>
+              <span>👁️</span>
+              <span>View</span>
+            </motion.button>
+            
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={handleDownload}
+              className="flex-1 rounded-xl border-2 border-gray-300 bg-white px-4 py-3 text-gray-700 font-medium shadow-sm hover:shadow-md transition-all duration-300 flex items-center justify-center space-x-2"
+            >
+              <span>⬇️</span>
+              <span>Download</span>
+            </motion.button>
           </div>
         </div>
+
+        {/* Move menu dropdown */}
+        {showMoveMenu && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="absolute right-0 top-16 mt-2 w-64 bg-white rounded-xl shadow-2xl border border-gray-200 z-50"
+          >
+            <div className="p-3">
+              <p className="text-xs font-semibold text-gray-600 mb-2 px-2">Move to folder:</p>
+              <button
+                onClick={() => handleMove(null)}
+                className="w-full px-4 py-3 text-left text-sm text-gray-700 hover:bg-gray-50 rounded-lg flex items-center space-x-3"
+              >
+                <span>📄</span>
+                <span>No Folder</span>
+              </button>
+              {folders.map((folder) => (
+                <button
+                  key={folder._id}
+                  onClick={() => handleMove(folder._id)}
+                  className="w-full px-4 py-3 text-left text-sm text-gray-700 hover:bg-gray-50 rounded-lg flex items-center space-x-3"
+                >
+                  <span>📁</span>
+                  <span>{folder.name}</span>
+                </button>
+              ))}
+            </div>
+          </motion.div>
+        )}
       </div>
 
-      {/* Animated border on hover */}
-      <div
-        className="absolute inset-0 rounded-xl pointer-events-none transition-all duration-700"
-        style={{
+      {/* Click outside to close menus */}
+      {(showActions || showMoveMenu) && (
+        <div 
+          className="fixed inset-0 z-40" 
+          onClick={() => {
+            setShowActions(false)
+            setShowMoveMenu(false)
+          }}
+        />
+      )}
+
+      {/* Animated border effect */}
+      <motion.div
+        initial={false}
+        animate={{ 
           opacity: isHovered ? 1 : 0,
-          boxShadow: "0 0 0 2px rgba(99, 102, 241, 0.2) inset",
+          scale: isHovered ? 1 : 0.95 
         }}
-      ></div>
+        className="absolute inset-0 rounded-2xl border-2 border-transparent pointer-events-none"
+        style={{
+          background: "linear-gradient(45deg, #6366f1, #8b5cf6, #ec4899) border-box",
+          WebkitMask: "linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0)",
+          mask: "linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0)",
+          WebkitMaskComposite: "xor",
+          maskComposite: "exclude",
+        }}
+      />
 
-      {/* Click outside to close move menu */}
-      {showMoveMenu && <div className="fixed inset-0 z-5" onClick={() => setShowMoveMenu(false)}></div>}
-
-      <style jsx>{`
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(-10px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        .animate-fadeIn {
-          animation: fadeIn 0.2s ease-out;
-        }
-      `}</style>
-    </div>
+      {/* Floating particles on hover */}
+      {isHovered && (
+        <>
+          <motion.div
+            initial={{ opacity: 0, scale: 0 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.1 }}
+            className="absolute -top-2 -right-2 h-4 w-4 rounded-full bg-blue-400 animate-ping"
+          />
+          <motion.div
+            initial={{ opacity: 0, scale: 0 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.2 }}
+            className="absolute -bottom-2 -left-2 h-3 w-3 rounded-full bg-purple-400 animate-ping"
+          />
+        </>
+      )}
+    </motion.div>
   )
 }
 

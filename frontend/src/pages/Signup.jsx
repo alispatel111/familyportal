@@ -23,7 +23,6 @@ const Signup = ({ onLogin }) => {
       [name]: value,
     })
     
-    // Clear error when user starts typing
     if (errors[name]) {
       setErrors({
         ...errors,
@@ -39,7 +38,6 @@ const Signup = ({ onLogin }) => {
       [name]: true
     })
     
-    // Validate the field
     validateField(name, formData[name])
   }
 
@@ -127,7 +125,6 @@ const Signup = ({ onLogin }) => {
     e.preventDefault()
     setLoading(true)
     
-    // Mark all fields as touched to show errors
     setTouched({
       fullName: true,
       username: true,
@@ -151,20 +148,17 @@ const Signup = ({ onLogin }) => {
 
       onLogin(response.data.user)
 
-      // Show success toast
       if (window.showToast) {
         window.showToast("success", "Account Created!", `Welcome to Family Portal, ${response.data.user.fullName}!`)
       }
     } catch (error) {
       const errorMessage = error.response?.data?.message || "Signup failed"
       
-      // Set a general form error
       setErrors({
         ...errors,
         form: errorMessage
       })
 
-      // Show error toast
       if (window.showToast) {
         window.showToast("error", "Signup Failed", errorMessage)
       }
@@ -174,259 +168,394 @@ const Signup = ({ onLogin }) => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-cyan-50 to-purple-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-6xl flex flex-col md:flex-row rounded-3xl overflow-hidden shadow-2xl bg-white/90 backdrop-blur-sm animate-slide-up">
-        {/* Left side with graphics */}
-        <div className="w-full md:w-2/5 bg-gradient-to-br from-indigo-500 to-cyan-500 p-8 text-white flex flex-col justify-center relative overflow-hidden">
-          <div className="absolute inset-0 opacity-10">
-            <div className="absolute top-10 left-10 w-20 h-20 bg-white rounded-full animate-pulse"></div>
-            <div className="absolute top-1/2 right-14 w-16 h-16 bg-white rounded-full animate-pulse" style={{animationDelay: '1s'}}></div>
-            <div className="absolute bottom-20 left-1/4 w-12 h-12 bg-white rounded-full animate-pulse" style={{animationDelay: '2s'}}></div>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0">
+        <div className="absolute top-0 right-1/4 w-96 h-96 bg-purple-300 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse"></div>
+        <div className="absolute bottom-0 left-1/4 w-96 h-96 bg-blue-300 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse delay-1000"></div>
+      </div>
+      
+      <div className="w-full max-w-6xl bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl overflow-hidden animate-slide-up">
+        <div className="grid grid-cols-1 lg:grid-cols-2">
+          {/* Left Side - Graphics */}
+          <div className="bg-gradient-to-br from-blue-600 to-purple-600 p-8 lg:p-12 text-white">
+            <div className="h-full flex flex-col justify-center">
+              <div className="mb-8">
+                <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mb-6">
+                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                  </svg>
+                </div>
+                
+                <h1 className="text-3xl font-bold mb-4">Join the Family Portal</h1>
+                <p className="text-blue-100 mb-8">Create your account to start managing family documents securely.</p>
+              </div>
+              
+              <div className="space-y-6">
+                <div className="flex items-center bg-white/10 p-4 rounded-xl backdrop-blur-sm hover:bg-white/15 transition-all duration-300 transform hover:-translate-y-1">
+                  <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center mr-4">
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-lg">End-to-End Encryption</h3>
+                    <p className="text-sm text-blue-100">Your documents are encrypted at rest and in transit</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-center bg-white/10 p-4 rounded-xl backdrop-blur-sm hover:bg-white/15 transition-all duration-300 transform hover:-translate-y-1">
+                  <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center mr-4">
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-lg">Family Sharing</h3>
+                    <p className="text-sm text-blue-100">Share documents securely with family members</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-center bg-white/10 p-4 rounded-xl backdrop-blur-sm hover:bg-white/15 transition-all duration-300 transform hover:-translate-y-1">
+                  <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center mr-4">
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-lg">24/7 Access</h3>
+                    <p className="text-sm text-blue-100">Access your documents from anywhere, anytime</p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="mt-8 pt-8 border-t border-white/20">
+                <p className="text-sm text-blue-100 italic">"Secure your family's memories and important documents in one safe place"</p>
+              </div>
+            </div>
           </div>
           
-          <div className="relative z-10">
-            <div className="flex items-center justify-center mb-6">
-              <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-sm">
-                <i className="fas fa-folder-open text-3xl text-white"></i>
-              </div>
+          {/* Right Side - Form */}
+          <div className="p-8 lg:p-12">
+            <div className="mb-8">
+              <h2 className="text-3xl font-bold text-gray-800">Create Account</h2>
+              <p className="text-gray-600 mt-2">Fill in your details to get started</p>
             </div>
-            <h1 className="text-3xl font-bold text-center mb-4 font-display">
-              Family Document Portal
-            </h1>
-            <p className="text-center text-indigo-100 mb-8">
-              Your family's secure document sharing platform
-            </p>
             
-            <div className="space-y-4 mt-10">
-              <div className="flex items-center bg-white/10 p-3 rounded-xl backdrop-blur-sm">
-                <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center mr-3">
-                  <i className="fas fa-shield-alt text-white"></i>
-                </div>
-                <div>
-                  <h3 className="font-semibold">Secure Storage</h3>
-                  <p className="text-sm text-indigo-100">Bank-level encryption</p>
-                </div>
-              </div>
-              
-              <div className="flex items-center bg-white/10 p-3 rounded-xl backdrop-blur-sm">
-                <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center mr-3">
-                  <i className="fas fa-users text-white"></i>
-                </div>
-                <div>
-                  <h3 className="font-semibold">Family Sharing</h3>
-                  <p className="text-sm text-indigo-100">Share with family members</p>
-                </div>
-              </div>
-              
-              <div className="flex items-center bg-white/10 p-3 rounded-xl backdrop-blur-sm">
-                <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center mr-3">
-                  <i className="fas fa-mobile-alt text-white"></i>
-                </div>
-                <div>
-                  <h3 className="font-semibold">Anywhere Access</h3>
-                  <p className="text-sm text-indigo-100">Access from any device</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        {/* Right side with form */}
-        <div className="w-full md:w-3/5 p-8 md:p-10">
-          <div className="text-center mb-8">
-            <h2 className="text-2xl font-bold text-gray-800">Create Account</h2>
-            <p className="text-gray-500">Join your family's secure document portal</p>
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-5">
-            {errors.form && (
-              <div className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50/80 p-4 text-sm text-red-700 backdrop-blur-sm animate-pulse">
-                <i className="fas fa-exclamation-circle mt-0.5 text-red-600"></i>
-                <span>{errors.form}</span>
-              </div>
-            )}
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              <div className="space-y-2">
-                <label htmlFor="fullName" className="text-sm font-medium text-gray-700 block">
-                  Full Name
-                </label>
-                <div className="relative group">
-                  <div className={`absolute inset-0 bg-gradient-to-r from-indigo-500 to-cyan-500 rounded-xl opacity-0 group-focus-within:opacity-100 transition-opacity duration-300 blur-sm group-hover:opacity-30 ${errors.fullName && touched.fullName ? '!opacity-30' : ''}`}></div>
-                  <input
-                    type="text"
-                    id="fullName"
-                    name="fullName"
-                    value={formData.fullName}
-                    onChange={handleChange}
-                    onBlur={handleBlur}
-                    required
-                    placeholder="Enter your full name"
-                    className={`relative w-full rounded-xl border ${errors.fullName && touched.fullName ? 'border-red-500' : 'border-gray-300'} bg-white/80 px-4 py-3 text-gray-900 placeholder-gray-500 outline-none transition-all duration-300 focus:ring-2 focus:ring-indigo-500 focus:border-transparent group-hover:bg-white/95 pl-10`}
-                  />
-                  <i className={`fas fa-user absolute left-3 top-1/2 -translate-y-1/2 ${errors.fullName && touched.fullName ? 'text-red-500' : 'text-gray-400'} group-focus-within:text-indigo-500 transition-colors duration-300`}></i>
-                </div>
-                {errors.fullName && touched.fullName && (
-                  <p className="text-red-500 text-xs mt-1 animate-fadeIn">{errors.fullName}</p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <label htmlFor="username" className="text-sm font-medium text-gray-700 block">
-                  Username
-                </label>
-                <div className="relative group">
-                  <div className={`absolute inset-0 bg-gradient-to-r from-indigo-500 to-cyan-500 rounded-xl opacity-0 group-focus-within:opacity-100 transition-opacity duration-300 blur-sm group-hover:opacity-30 ${errors.username && touched.username ? '!opacity-30' : ''}`}></div>
-                  <input
-                    type="text"
-                    id="username"
-                    name="username"
-                    value={formData.username}
-                    onChange={handleChange}
-                    onBlur={handleBlur}
-                    required
-                    placeholder="Choose a username"
-                    className={`relative w-full rounded-xl border ${errors.username && touched.username ? 'border-red-500' : 'border-gray-300'} bg-white/80 px-4 py-3 text-gray-900 placeholder-gray-500 outline-none transition-all duration-300 focus:ring-2 focus:ring-indigo-500 focus:border-transparent group-hover:bg-white/95 pl-10`}
-                  />
-                  <i className={`fas fa-at absolute left-3 top-1/2 -translate-y-1/2 ${errors.username && touched.username ? 'text-red-500' : 'text-gray-400'} group-focus-within:text-indigo-500 transition-colors duration-300`}></i>
-                </div>
-                {errors.username && touched.username && (
-                  <p className="text-red-500 text-xs mt-1 animate-fadeIn">{errors.username}</p>
-                )}
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <label htmlFor="email" className="text-sm font-medium text-gray-700 block">
-                Email Address
-              </label>
-              <div className="relative group">
-                <div className={`absolute inset-0 bg-gradient-to-r from-indigo-500 to-cyan-500 rounded-xl opacity-0 group-focus-within:opacity-100 transition-opacity duration-300 blur-sm group-hover:opacity-30 ${errors.email && touched.email ? '!opacity-30' : ''}`}></div>
-                <input
-                  type="email"
-                  id="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  onBlur={handleBlur}
-                  required
-                  placeholder="Enter your email address"
-                  className={`relative w-full rounded-xl border ${errors.email && touched.email ? 'border-red-500' : 'border-gray-300'} bg-white/80 px-4 py-3 text-gray-900 placeholder-gray-500 outline-none transition-all duration-300 focus:ring-2 focus:ring-indigo-500 focus:border-transparent group-hover:bg-white/95 pl-10`}
-                />
-                <i className={`fas fa-envelope absolute left-3 top-1/2 -translate-y-1/2 ${errors.email && touched.email ? 'text-red-500' : 'text-gray-400'} group-focus-within:text-indigo-500 transition-colors duration-300`}></i>
-              </div>
-              {errors.email && touched.email && (
-                <p className="text-red-500 text-xs mt-1 animate-fadeIn">{errors.email}</p>
-              )}
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              <div className="space-y-2">
-                <label htmlFor="password" className="text-sm font-medium text-gray-700 block">
-                  Password
-                </label>
-                <div className="relative group">
-                  <div className={`absolute inset-0 bg-gradient-to-r from-indigo-500 to-cyan-500 rounded-xl opacity-0 group-focus-within:opacity-100 transition-opacity duration-300 blur-sm group-hover:opacity-30 ${errors.password && touched.password ? '!opacity-30' : ''}`}></div>
-                  <input
-                    type="password"
-                    id="password"
-                    name="password"
-                    value={formData.password}
-                    onChange={handleChange}
-                    onBlur={handleBlur}
-                    required
-                    placeholder="Create a strong password"
-                    className={`relative w-full rounded-xl border ${errors.password && touched.password ? 'border-red-500' : 'border-gray-300'} bg-white/80 px-4 py-3 text-gray-900 placeholder-gray-500 outline-none transition-all duration-300 focus:ring-2 focus:ring-indigo-500 focus:border-transparent group-hover:bg-white/95 pl-10`}
-                    minLength="6"
-                  />
-                  <i className={`fas fa-lock absolute left-3 top-1/2 -translate-y-1/2 ${errors.password && touched.password ? 'text-red-500' : 'text-gray-400'} group-focus-within:text-indigo-500 transition-colors duration-300`}></i>
-                </div>
-                {errors.password && touched.password && (
-                  <p className="text-red-500 text-xs mt-1 animate-fadeIn">{errors.password}</p>
-                )}
-                {formData.password && !errors.password && (
-                  <div className="mt-3 rounded-xl border border-blue-100 bg-blue-50/80 p-4 text-xs text-blue-800 backdrop-blur-sm transition-all duration-500 animate-in slide-in-from-top-1">
-                    <h4 className="mb-1 font-semibold flex items-center">
-                      <i className="fas fa-shield-alt mr-2"></i>
-                      Password Requirements:
-                    </h4>
-                    <ul className="list-disc pl-5 space-y-1 mt-2">
-                      <li>At least 6 characters long</li>
-                      <li>Mix of letters and numbers recommended</li>
-                      <li>Avoid common passwords</li>
-                    </ul>
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {errors.form && (
+                <div className="bg-red-50 border border-red-200 rounded-xl p-4 animate-shake">
+                  <div className="flex items-start">
+                    <svg className="w-5 h-5 text-red-500 mt-0.5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span className="text-red-700">{errors.form}</span>
                   </div>
-                )}
+                </div>
+              )}
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label htmlFor="fullName" className="block text-sm font-medium text-gray-700">
+                    Full Name
+                  </label>
+                  <div className="relative group">
+                    <input
+                      type="text"
+                      id="fullName"
+                      name="fullName"
+                      value={formData.fullName}
+                      onChange={handleChange}
+                      onBlur={handleBlur}
+                      required
+                      placeholder="John Doe"
+                      className={`w-full px-4 py-3.5 pl-12 bg-gray-50 border ${
+                        errors.fullName && touched.fullName ? 'border-red-500' : 'border-gray-300'
+                      } rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 group-hover:border-blue-400`}
+                    />
+                    <div className={`absolute left-4 top-1/2 transform -translate-y-1/2 ${
+                      errors.fullName && touched.fullName ? 'text-red-500' : 'text-gray-400'
+                    } group-focus-within:text-blue-500 transition-colors duration-300`}>
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      </svg>
+                    </div>
+                  </div>
+                  {errors.fullName && touched.fullName && (
+                    <p className="text-red-500 text-sm animate-fade-in">{errors.fullName}</p>
+                  )}
+                </div>
+                
+                <div className="space-y-2">
+                  <label htmlFor="username" className="block text-sm font-medium text-gray-700">
+                    Username
+                  </label>
+                  <div className="relative group">
+                    <input
+                      type="text"
+                      id="username"
+                      name="username"
+                      value={formData.username}
+                      onChange={handleChange}
+                      onBlur={handleBlur}
+                      required
+                      placeholder="johndoe"
+                      className={`w-full px-4 py-3.5 pl-12 bg-gray-50 border ${
+                        errors.username && touched.username ? 'border-red-500' : 'border-gray-300'
+                      } rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 group-hover:border-blue-400`}
+                    />
+                    <div className={`absolute left-4 top-1/2 transform -translate-y-1/2 ${
+                      errors.username && touched.username ? 'text-red-500' : 'text-gray-400'
+                    } group-focus-within:text-blue-500 transition-colors duration-300`}>
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                      </svg>
+                    </div>
+                  </div>
+                  {errors.username && touched.username && (
+                    <p className="text-red-500 text-sm animate-fade-in">{errors.username}</p>
+                  )}
+                </div>
               </div>
-
+              
               <div className="space-y-2">
-                <label htmlFor="confirmPassword" className="text-sm font-medium text-gray-700 block">
-                  Confirm Password
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                  Email Address
                 </label>
                 <div className="relative group">
-                  <div className={`absolute inset-0 bg-gradient-to-r from-indigo-500 to-cyan-500 rounded-xl opacity-0 group-focus-within:opacity-100 transition-opacity duration-300 blur-sm group-hover:opacity-30 ${errors.confirmPassword && touched.confirmPassword ? '!opacity-30' : ''}`}></div>
                   <input
-                    type="password"
-                    id="confirmPassword"
-                    name="confirmPassword"
-                    value={formData.confirmPassword}
+                    type="email"
+                    id="email"
+                    name="email"
+                    value={formData.email}
                     onChange={handleChange}
                     onBlur={handleBlur}
                     required
-                    placeholder="Confirm your password"
-                    className={`relative w-full rounded-xl border ${errors.confirmPassword && touched.confirmPassword ? 'border-red-500' : 'border-gray-300'} bg-white/80 px-4 py-3 text-gray-900 placeholder-gray-500 outline-none transition-all duration-300 focus:ring-2 focus:ring-indigo-500 focus:border-transparent group-hover:bg-white/95 pl-10`}
+                    placeholder="john@example.com"
+                    className={`w-full px-4 py-3.5 pl-12 bg-gray-50 border ${
+                      errors.email && touched.email ? 'border-red-500' : 'border-gray-300'
+                    } rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 group-hover:border-blue-400`}
                   />
-                  <i className={`fas fa-lock absolute left-3 top-1/2 -translate-y-1/2 ${errors.confirmPassword && touched.confirmPassword ? 'text-red-500' : 'text-gray-400'} group-focus-within:text-indigo-500 transition-colors duration-300`}></i>
+                  <div className={`absolute left-4 top-1/2 transform -translate-y-1/2 ${
+                    errors.email && touched.email ? 'text-red-500' : 'text-gray-400'
+                  } group-focus-within:text-blue-500 transition-colors duration-300`}>
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    </svg>
+                  </div>
                 </div>
-                {errors.confirmPassword && touched.confirmPassword && (
-                  <p className="text-red-500 text-xs mt-1 animate-fadeIn">{errors.confirmPassword}</p>
+                {errors.email && touched.email && (
+                  <p className="text-red-500 text-sm animate-fade-in">{errors.email}</p>
                 )}
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                    Password
+                  </label>
+                  <div className="relative group">
+                    <input
+                      type="password"
+                      id="password"
+                      name="password"
+                      value={formData.password}
+                      onChange={handleChange}
+                      onBlur={handleBlur}
+                      required
+                      placeholder="••••••••"
+                      className={`w-full px-4 py-3.5 pl-12 bg-gray-50 border ${
+                        errors.password && touched.password ? 'border-red-500' : 'border-gray-300'
+                      } rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 group-hover:border-blue-400`}
+                      minLength="6"
+                    />
+                    <div className={`absolute left-4 top-1/2 transform -translate-y-1/2 ${
+                      errors.password && touched.password ? 'text-red-500' : 'text-gray-400'
+                    } group-focus-within:text-blue-500 transition-colors duration-300`}>
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                      </svg>
+                    </div>
+                  </div>
+                  {errors.password && touched.password && (
+                    <p className="text-red-500 text-sm animate-fade-in">{errors.password}</p>
+                  )}
+                  
+                  {formData.password && !errors.password && (
+                    <div className="mt-3 bg-blue-50 border border-blue-200 rounded-xl p-4 animate-slide-down">
+                      <div className="flex items-center mb-2">
+                        <svg className="w-5 h-5 text-blue-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                        </svg>
+                        <h4 className="font-semibold text-blue-800">Password Requirements</h4>
+                      </div>
+                      <ul className="text-sm text-blue-700 space-y-1">
+                        <li className="flex items-center">
+                          <svg className="w-4 h-4 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                          </svg>
+                          At least 6 characters long
+                        </li>
+                        <li className="flex items-center">
+                          <svg className="w-4 h-4 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                          </svg>
+                          Mix of letters and numbers
+                        </li>
+                        <li className="flex items-center">
+                          <svg className="w-4 h-4 text-amber-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.998-.833-2.768 0L4.642 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                          </svg>
+                          Avoid common passwords
+                        </li>
+                      </ul>
+                    </div>
+                  )}
+                </div>
+                
+                <div className="space-y-2">
+                  <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
+                    Confirm Password
+                  </label>
+                  <div className="relative group">
+                    <input
+                      type="password"
+                      id="confirmPassword"
+                      name="confirmPassword"
+                      value={formData.confirmPassword}
+                      onChange={handleChange}
+                      onBlur={handleBlur}
+                      required
+                      placeholder="••••••••"
+                      className={`w-full px-4 py-3.5 pl-12 bg-gray-50 border ${
+                        errors.confirmPassword && touched.confirmPassword ? 'border-red-500' : 'border-gray-300'
+                      } rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 group-hover:border-blue-400`}
+                    />
+                    <div className={`absolute left-4 top-1/2 transform -translate-y-1/2 ${
+                      errors.confirmPassword && touched.confirmPassword ? 'text-red-500' : 'text-gray-400'
+                    } group-focus-within:text-blue-500 transition-colors duration-300`}>
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                      </svg>
+                    </div>
+                  </div>
+                  {errors.confirmPassword && touched.confirmPassword && (
+                    <p className="text-red-500 text-sm animate-fade-in">{errors.confirmPassword}</p>
+                  )}
+                </div>
+              </div>
+              
+              <button
+                type="submit"
+                className={`w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold py-3.5 px-4 rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                  loading ? "opacity-90 cursor-not-allowed" : ""
+                }`}
+                disabled={loading}
+              >
+                <div className="flex items-center justify-center gap-2">
+                  {loading ? (
+                    <>
+                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                      <span>Creating Account...</span>
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                      </svg>
+                      <span>Create Account</span>
+                    </>
+                  )}
+                </div>
+              </button>
+            </form>
+            
+            <div className="mt-8 pt-6 border-t border-gray-200">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                <p className="text-gray-600">Already have an account?</p>
+                <Link
+                  to="/login"
+                  className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium transition-colors duration-300 group"
+                >
+                  <span>Sign In Here</span>
+                  <svg className="w-4 h-4 transform group-hover:translate-x-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                  </svg>
+                </Link>
               </div>
             </div>
-
-            <button
-              type="submit"
-              className={`w-full py-3 px-4 rounded-xl bg-gradient-to-r from-indigo-500 to-cyan-500 text-white font-semibold shadow-lg transition-all duration-500 transform hover:scale-[1.02] hover:shadow-xl hover:from-indigo-600 hover:to-cyan-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
-                loading ? "opacity-85" : ""
-              }`}
-              disabled={loading}
-            >
-              <div className="flex items-center justify-center gap-2">
-                {loading ? (
-                  <>
-                    <span className="h-5 w-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-                    <span>Creating Account...</span>
-                  </>
-                ) : (
-                  <>
-                    <i className="fas fa-user-plus"></i>
-                    <span>Create Account</span>
-                  </>
-                )}
-              </div>
-            </button>
-          </form>
-
-          <div className="mt-6 pt-5 border-t border-gray-200/70 flex items-center justify-between">
-            <p className="text-sm text-gray-600">Already have an account?</p>
-            <Link
-              to="/login"
-              className="text-sm font-medium text-indigo-600 hover:text-indigo-700 transition-colors duration-300 flex items-center gap-1.5 group"
-            >
-              <span>Sign in here</span>
-              <i className="fas fa-arrow-right text-xs transition-transform duration-300 group-hover:translate-x-0.5"></i>
-            </Link>
           </div>
         </div>
       </div>
       
-      <style jsx>{`
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(-5px); }
-          to { opacity: 1; transform: translateY(0); }
+      <style jsx global>{`
+        @keyframes slide-up {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
         }
-        .animate-fadeIn {
-          animation: fadeIn 0.3s ease-in-out;
+        
+        @keyframes slide-down {
+          from {
+            opacity: 0;
+            transform: translateY(-10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        
+        @keyframes fade-in {
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
+          }
+        }
+        
+        @keyframes shake {
+          0%, 100% { transform: translateX(0); }
+          10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+          20%, 40%, 60%, 80% { transform: translateX(5px); }
+        }
+        
+        .animate-slide-up {
+          animation: slide-up 0.6s ease-out;
+        }
+        
+        .animate-slide-down {
+          animation: slide-down 0.3s ease-out;
+        }
+        
+        .animate-fade-in {
+          animation: fade-in 0.3s ease-out;
+        }
+        
+        .animate-shake {
+          animation: shake 0.5s ease-in-out;
+        }
+        
+        .animate-pulse {
+          animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        
+        @keyframes pulse {
+          0%, 100% {
+            opacity: 0.2;
+          }
+          50% {
+            opacity: 0.4;
+          }
+        }
+        
+        .delay-1000 {
+          animation-delay: 1s;
         }
       `}</style>
     </div>

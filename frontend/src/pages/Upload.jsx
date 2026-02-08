@@ -6,13 +6,14 @@ import axios from "axios"
 
 const Upload = () => {
   const navigate = useNavigate()
-  const [formData, setFormData] = useState({ category: "", file: null, folderId: "" }) // Added folderId to form data
-  const [folders, setFolders] = useState([]) // Added folders state
+  const [formData, setFormData] = useState({ category: "", file: null, folderId: "" })
+  const [folders, setFolders] = useState([])
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState("")
   const [success, setSuccess] = useState("")
   const [uploadProgress, setUploadProgress] = useState(0)
   const [isDragging, setIsDragging] = useState(false)
+  const [uploadedFile, setUploadedFile] = useState(null)
 
   const categories = [
     "Aadhaar Card",
@@ -64,16 +65,38 @@ const Upload = () => {
 
     const files = e.dataTransfer.files
     if (files.length) {
-      setFormData({ ...formData, file: files[0] })
-      if (error) setError("")
+      handleFileSelect(files[0])
     }
+  }
+
+  const handleFileSelect = (file) => {
+    if (file.size > 10 * 1024 * 1024) {
+      setError("File size must be less than 10MB")
+      return
+    }
+
+    const allowedTypes = [
+      "application/pdf",
+      "image/jpeg",
+      "image/jpg",
+      "image/png",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    ]
+
+    if (!allowedTypes.includes(file.type)) {
+      setError("Only PDF, JPG, PNG, and DOCX files are allowed")
+      return
+    }
+
+    setFormData({ ...formData, file })
+    setUploadedFile(file)
+    setError("")
   }
 
   const handleChange = (e) => {
     if (e.target.name === "file") {
       const file = e.target.files[0]
-      setFormData({ ...formData, file })
-      if (error) setError("")
+      handleFileSelect(file)
     } else {
       setFormData({ ...formData, [e.target.name]: e.target.value })
     }
@@ -88,25 +111,6 @@ const Upload = () => {
 
     if (!formData.file || !formData.category) {
       setError("Please select a file and category")
-      setUploading(false)
-      return
-    }
-
-    if (formData.file.size > 10 * 1024 * 1024) {
-      setError("File size must be less than 10MB")
-      setUploading(false)
-      return
-    }
-
-    const allowedTypes = [
-      "application/pdf",
-      "image/jpeg",
-      "image/jpg",
-      "image/png",
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-    ]
-    if (!allowedTypes.includes(formData.file.type)) {
-      setError("Only PDF, JPG, PNG, and DOCX files are allowed")
       setUploading(false)
       return
     }
@@ -141,7 +145,8 @@ const Upload = () => {
         window.showToast("success", "Upload Successful!", `${formData.file.name} has been uploaded successfully`)
       }
 
-      setFormData({ category: "", file: null, folderId: "" }) // Reset folderId in form data
+      setFormData({ category: "", file: null, folderId: "" })
+      setUploadedFile(null)
       const fileInput = document.getElementById("file")
       if (fileInput) fileInput.value = ""
 
@@ -177,231 +182,293 @@ const Upload = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 py-8 px-4">
-      <div className="max-w-2xl mx-auto">
-        <div className="mb-8 text-center">
-          <h1 className="text-3xl font-bold text-gray-800 mb-2 flex items-center justify-center">
-            <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-              Upload Document
-            </span>
-          </h1>
-          <p className="text-gray-600">Securely upload your important documents to the family portal</p>
-        </div>
-
-        <div className="bg-white rounded-2xl shadow-xl overflow-hidden transition-all duration-300 hover:shadow-2xl">
-          <div className="p-8">
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {error && (
-                <div className="flex items-start gap-3 p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 animate-shake">
-                  <i className="fas fa-exclamation-circle mt-0.5 text-red-500"></i>
-                  <div>
-                    <p className="font-medium">Upload Error</p>
-                    <p className="text-sm mt-1">{error}</p>
-                  </div>
-                </div>
-              )}
-
-              {success && (
-                <div className="p-4 rounded-xl bg-green-50 border border-green-200 text-green-700 animate-fade-in">
-                  <div className="flex items-center gap-3">
-                    <i className="fas fa-check-circle text-green-500"></i>
-                    <div>
-                      <p className="font-medium">Upload Successful!</p>
-                      <p className="text-sm mt-1">{success}</p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              <div>
-                <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-2">
-                  Document Category
-                </label>
-                <div className="relative">
-                  <select
-                    id="category"
-                    name="category"
-                    value={formData.category}
-                    onChange={handleChange}
-                    required
-                    className="w-full px-4 py-3 rounded-xl border border-gray-300 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 appearance-none shadow-sm"
-                  >
-                    <option value="">Select a category</option>
-                    {categories.map((category) => (
-                      <option key={category} value={category}>
-                        {category}
-                      </option>
-                    ))}
-                  </select>
-                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
-                    <i className="fas fa-chevron-down"></i>
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <label htmlFor="folderId" className="block text-sm font-medium text-gray-700 mb-2">
-                  Folder (Optional)
-                </label>
-                <div className="relative">
-                  <select
-                    id="folderId"
-                    name="folderId"
-                    value={formData.folderId}
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-300 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 appearance-none shadow-sm"
-                  >
-                    <option value="">No Folder (Root)</option>
-                    {folders.map((folder) => (
-                      <option key={folder._id} value={folder._id}>
-                        📁 {folder.name}
-                      </option>
-                    ))}
-                  </select>
-                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
-                    <i className="fas fa-chevron-down"></i>
-                  </div>
-                </div>
-                <p className="text-xs text-gray-500 mt-1">
-                  Choose a folder to organize your document, or leave empty to upload to root
-                </p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">File Upload</label>
-
-                <div
-                  className={`relative rounded-2xl border-2 border-dashed p-8 text-center transition-all duration-300 ${isDragging ? "border-blue-500 bg-blue-50 scale-[1.02]" : "border-gray-300 bg-gray-50"} ${formData.file ? "border-green-500 bg-green-50" : ""} hover:border-blue-400 hover:bg-blue-50`}
-                  onDragEnter={handleDragEnter}
-                  onDragOver={handleDragOver}
-                  onDragLeave={handleDragLeave}
-                  onDrop={handleDrop}
-                >
-                  <input
-                    type="file"
-                    id="file"
-                    name="file"
-                    onChange={handleChange}
-                    accept=".pdf,.jpg,.jpeg,.png,.docx"
-                    required
-                    className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-                  />
-                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-100 text-blue-600 mb-4">
-                    <i
-                      className={`text-2xl ${formData.file ? getFileIcon(formData.file) : "fas fa-cloud-upload-alt"}`}
-                    ></i>
-                  </div>
-                  <div className="flex flex-col items-center">
-                    <p className="font-medium text-gray-900 mb-1">
-                      {formData.file ? formData.file.name : "Click to browse or drag & drop"}
-                    </p>
-                    <p className="text-sm text-gray-500">
-                      {formData.file ? formatFileSize(formData.file.size) : "PDF, JPG, PNG, DOCX (Max 10MB)"}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {formData.file && (
-                <div className="rounded-2xl bg-blue-50 p-5 animate-fade-in">
-                  <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center">
-                    <i className="fas fa-file mr-2 text-blue-600"></i>
-                    File Preview
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <div className="bg-white rounded-lg p-3 shadow-sm flex items-center">
-                      <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center text-blue-600 mr-3">
-                        <i className="fas fa-file"></i>
-                      </div>
-                      <div className="overflow-hidden">
-                        <div className="text-xs text-gray-500">Name</div>
-                        <div className="text-sm font-medium text-gray-900 truncate">{formData.file.name}</div>
-                      </div>
-                    </div>
-                    <div className="bg-white rounded-lg p-3 shadow-sm flex items-center">
-                      <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center text-blue-600 mr-3">
-                        <i className="fas fa-weight-hanging"></i>
-                      </div>
-                      <div>
-                        <div className="text-xs text-gray-500">Size</div>
-                        <div className="text-sm font-medium text-gray-900">{formatFileSize(formData.file.size)}</div>
-                      </div>
-                    </div>
-                    <div className="bg-white rounded-lg p-3 shadow-sm flex items-center md:col-span-2">
-                      <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center text-blue-600 mr-3">
-                        <i className="fas fa-file-code"></i>
-                      </div>
-                      <div className="overflow-hidden">
-                        <div className="text-xs text-gray-500">Type</div>
-                        <div className="text-sm font-medium text-gray-900 truncate">{formData.file.type}</div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {uploading && (
-                <div className="space-y-3">
-                  <div className="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
-                    <div
-                      className="h-2.5 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 transition-all duration-300 ease-out"
-                      style={{ width: `${uploadProgress}%` }}
-                    ></div>
-                  </div>
-                  <div className="flex items-center text-sm text-gray-600">
-                    <i className="fas fa-spinner fa-spin mr-2 text-blue-600"></i>
-                    <span>Uploading... {uploadProgress}%</span>
-                  </div>
-                </div>
-              )}
-
-              <button
-                type="submit"
-                disabled={uploading}
-                className={`w-full py-3 px-4 rounded-xl font-medium text-white transition-all duration-300 flex items-center justify-center gap-2 ${uploading ? "bg-gray-400 cursor-not-allowed" : "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-md hover:shadow-lg transform hover:-translate-y-0.5"}`}
-              >
-                {uploading ? (
-                  <>
-                    <i className="fas fa-spinner fa-spin"></i>
-                    Uploading...
-                  </>
-                ) : (
-                  <>
-                    <i className="fas fa-upload"></i>
-                    Upload Document
-                  </>
-                )}
-              </button>
-            </form>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 p-4 md:p-6">
+      <div className="max-w-3xl mx-auto animate-slide-up">
+        {/* Header */}
+        <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-3xl shadow-2xl p-6 md:p-8 text-white overflow-hidden relative mb-8">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -translate-y-32 translate-x-32"></div>
+          <div className="absolute bottom-0 left-0 w-64 h-64 bg-white/10 rounded-full translate-y-32 -translate-x-32"></div>
+          
+          <div className="relative z-10 text-center">
+            <div className="w-20 h-20 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center mx-auto mb-6">
+              <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+              </svg>
+            </div>
+            <h1 className="text-3xl font-bold mb-3">Upload Document</h1>
+            <p className="text-blue-100">Securely upload your important documents to the family portal</p>
           </div>
         </div>
 
-        <div className="mt-6 text-center">
-          <button
-            onClick={() => navigate("/my-documents")}
-            className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900 transition-colors duration-200"
-          >
-            <i className="fas fa-arrow-left mr-2"></i>
-            Back to My Documents
-          </button>
+        {/* Upload Form */}
+        <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl p-6 md:p-8 border border-white/40">
+          <form onSubmit={handleSubmit} className="space-y-8">
+            {/* Status Messages */}
+            {error && (
+              <div className="bg-red-50 border border-red-200 rounded-2xl p-5 animate-shake">
+                <div className="flex items-start gap-3">
+                  <svg className="w-6 h-6 text-red-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <div>
+                    <p className="font-medium text-red-800">Upload Error</p>
+                    <p className="text-sm text-red-600 mt-1">{error}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {success && (
+              <div className="bg-green-50 border border-green-200 rounded-2xl p-5 animate-fade-in">
+                <div className="flex items-center gap-3">
+                  <svg className="w-6 h-6 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <div>
+                    <p className="font-medium text-green-800">Upload Successful!</p>
+                    <p className="text-sm text-green-600 mt-1">{success}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Category Selection */}
+            <div>
+              <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-3">
+                Document Category
+              </label>
+              <div className="relative">
+                <select
+                  id="category"
+                  name="category"
+                  value={formData.category}
+                  onChange={handleChange}
+                  required
+                  className="w-full px-4 py-3.5 bg-gray-50 border border-gray-300 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none shadow-sm"
+                >
+                  <option value="">Select a category</option>
+                  {categories.map((category) => (
+                    <option key={category} value={category}>
+                      {category}
+                    </option>
+                  ))}
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-700">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+
+            {/* Folder Selection */}
+            <div>
+              <label htmlFor="folderId" className="block text-sm font-medium text-gray-700 mb-3">
+                Folder (Optional)
+              </label>
+              <div className="relative">
+                <select
+                  id="folderId"
+                  name="folderId"
+                  value={formData.folderId}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3.5 bg-gray-50 border border-gray-300 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none shadow-sm"
+                >
+                  <option value="">No Folder (Root)</option>
+                  {folders.map((folder) => (
+                    <option key={folder._id} value={folder._id}>
+                      {folder.name}
+                    </option>
+                  ))}
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-700">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
+              </div>
+              <p className="text-xs text-gray-500 mt-2">
+                Choose a folder to organize your document, or leave empty to upload to root
+              </p>
+            </div>
+
+            {/* File Upload Area */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-3">File Upload</label>
+              
+              <div
+                className={`relative rounded-2xl border-2 ${isDragging ? 'border-blue-500' : 'border-dashed border-gray-300'} ${uploadedFile ? 'border-green-500' : ''} p-8 text-center transition-all duration-300 ${isDragging ? 'bg-blue-50 scale-[1.02]' : 'bg-gray-50'} hover:bg-blue-50`}
+                onDragEnter={handleDragEnter}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+              >
+                <input
+                  type="file"
+                  id="file"
+                  name="file"
+                  onChange={handleChange}
+                  accept=".pdf,.jpg,.jpeg,.png,.docx"
+                  required
+                  className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                />
+                
+                <div className="mb-6">
+                  <div className={`w-20 h-20 rounded-full ${uploadedFile ? 'bg-green-100' : 'bg-blue-100'} flex items-center justify-center mx-auto mb-4`}>
+                    <svg className={`w-10 h-10 ${uploadedFile ? 'text-green-600' : 'text-blue-600'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                    </svg>
+                  </div>
+                  
+                  <div>
+                    <p className="text-lg font-medium text-gray-900 mb-2">
+                      {uploadedFile ? uploadedFile.name : "Drag & drop or click to browse"}
+                    </p>
+                    <p className="text-sm text-gray-500">
+                      {uploadedFile ? formatFileSize(uploadedFile.size) : "PDF, JPG, PNG, DOCX (Max 10MB)"}
+                    </p>
+                  </div>
+                </div>
+                
+                <button
+                  type="button"
+                  onClick={() => document.getElementById('file').click()}
+                  className="inline-flex items-center gap-2 bg-white border border-gray-300 text-gray-700 font-medium px-5 py-2.5 rounded-lg hover:bg-gray-50 transition-all duration-300"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                  </svg>
+                  Browse Files
+                </button>
+              </div>
+            </div>
+
+            {/* File Preview */}
+            {uploadedFile && (
+              <div className="bg-blue-50 rounded-2xl p-6 animate-fade-in">
+                <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                  <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  File Preview
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="bg-white rounded-xl p-4">
+                    <div className="text-sm text-gray-500 mb-1">File Name</div>
+                    <div className="font-medium text-gray-900 truncate">{uploadedFile.name}</div>
+                  </div>
+                  <div className="bg-white rounded-xl p-4">
+                    <div className="text-sm text-gray-500 mb-1">File Size</div>
+                    <div className="font-medium text-gray-900">{formatFileSize(uploadedFile.size)}</div>
+                  </div>
+                  <div className="bg-white rounded-xl p-4">
+                    <div className="text-sm text-gray-500 mb-1">File Type</div>
+                    <div className="font-medium text-gray-900">{uploadedFile.type}</div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Upload Progress */}
+            {uploading && (
+              <div className="space-y-4">
+                <div>
+                  <div className="flex justify-between text-sm text-gray-600 mb-2">
+                    <span>Upload Progress</span>
+                    <span>{uploadProgress}%</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
+                    <div
+                      className="h-2.5 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 transition-all duration-300"
+                      style={{ width: `${uploadProgress}%` }}
+                    ></div>
+                  </div>
+                </div>
+                <div className="flex items-center justify-center gap-3 text-gray-600">
+                  <div className="w-5 h-5 border-2 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+                  <span>Uploading your document...</span>
+                </div>
+              </div>
+            )}
+
+            {/* Submit Button */}
+            <button
+              type="submit"
+              disabled={uploading || !formData.file || !formData.category}
+              className={`w-full py-4 px-6 rounded-xl font-semibold transition-all duration-300 flex items-center justify-center gap-3 ${
+                uploading || !formData.file || !formData.category
+                  ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                  : "bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg hover:shadow-xl hover:-translate-y-0.5"
+              }`}
+            >
+              {uploading ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  <span>Uploading...</span>
+                </>
+              ) : (
+                <>
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                  </svg>
+                  <span>Upload Document</span>
+                </>
+              )}
+            </button>
+          </form>
+
+          {/* Back Button */}
+          <div className="mt-8 pt-6 border-t border-gray-200">
+            <button
+              onClick={() => navigate("/my-documents")}
+              className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-800 font-medium transition-colors duration-300 group"
+            >
+              <svg className="w-4 h-4 transform group-hover:-translate-x-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+              <span>Back to My Documents</span>
+            </button>
+          </div>
         </div>
       </div>
 
-      <style jsx>{`
+      <style jsx global>{`
+        @keyframes slide-up {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        
+        @keyframes fade-in {
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
+          }
+        }
+        
         @keyframes shake {
           0%, 100% { transform: translateX(0); }
           10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
           20%, 40%, 60%, 80% { transform: translateX(5px); }
         }
+        
+        .animate-slide-up {
+          animation: slide-up 0.6s ease-out;
+        }
+        
+        .animate-fade-in {
+          animation: fade-in 0.3s ease-out;
+        }
+        
         .animate-shake {
           animation: shake 0.5s ease-in-out;
-        }
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(-10px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        .animate-fade-in {
-          animation: fadeIn 0.3s ease-out;
         }
       `}</style>
     </div>
