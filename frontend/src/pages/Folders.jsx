@@ -4,8 +4,22 @@ import { useState, useEffect } from "react"
 import axios from "axios"
 import FolderCard from "../components/FolderCard"
 import FolderModal from "../components/FolderModal"
+// Importing modern icons from Lucide React
+import { 
+  Search, 
+  Plus, 
+  Folder, 
+  FileText, 
+  HardDrive, 
+  Clock, 
+  Loader2, 
+  Filter, 
+  LayoutGrid,
+  ChevronDown
+} from "lucide-react"
 
 const Folders = () => {
+  // --- STATE MANAGEMENT (LOGIC UNCHANGED) ---
   const [folders, setFolders] = useState([])
   const [loading, setLoading] = useState(true)
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -13,10 +27,12 @@ const Folders = () => {
   const [searchQuery, setSearchQuery] = useState("")
   const [sortBy, setSortBy] = useState("newest")
 
+  // --- EFFECTS (LOGIC UNCHANGED) ---
   useEffect(() => {
     fetchFolders()
   }, [])
 
+  // --- API HANDLERS (LOGIC UNCHANGED) ---
   const fetchFolders = async () => {
     try {
       setLoading(true)
@@ -87,6 +103,7 @@ const Folders = () => {
     window.location.href = `/my-documents?folder=${folder._id}`
   }
 
+  // --- FILTER & SORT LOGIC (LOGIC UNCHANGED) ---
   const filteredFolders = folders.filter(folder =>
     folder.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     folder.description.toLowerCase().includes(searchQuery.toLowerCase())
@@ -97,215 +114,237 @@ const Folders = () => {
     return 0
   })
 
+  // --- LOADING STATE ---
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-blue-50">
-        <div className="text-center animate-fade-in">
-          <div className="relative">
-            <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto"></div>
-            <div className="absolute inset-0 flex items-center justify-center">
-              <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
-              </svg>
-            </div>
-          </div>
-          <p className="mt-4 text-gray-600 font-medium">Loading folders...</p>
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50/50 backdrop-blur-sm">
+        <div className="relative flex flex-col items-center p-8 bg-white rounded-2xl shadow-xl border border-gray-100 animate-fade-in-up">
+          <Loader2 className="w-12 h-12 text-blue-600 animate-spin mb-4" />
+          <p className="text-gray-600 font-medium text-lg">Loading your workspace...</p>
+          <p className="text-gray-400 text-sm mt-1">Please wait a moment</p>
         </div>
       </div>
     )
   }
 
+  // --- MAIN RENDER ---
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 p-4 md:p-6">
-      <div className="max-w-7xl mx-auto space-y-8 animate-slide-up">
-        {/* Header */}
-        <div className="bg-gradient-to-r from-green-600 to-blue-600 rounded-3xl shadow-2xl p-6 md:p-8 text-white overflow-hidden relative">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -translate-y-32 translate-x-32"></div>
-          <div className="absolute bottom-0 left-0 w-64 h-64 bg-white/10 rounded-full translate-y-32 -translate-x-32"></div>
+    <div className="min-h-screen bg-[#F8FAFC] p-4 md:p-6 lg:p-8 font-sans text-slate-800">
+      <div className="max-w-[1400px] mx-auto space-y-8 animate-fade-in">
+        
+        {/* --- HERO / HEADER SECTION --- */}
+        <div className="relative bg-gradient-to-br from-indigo-600 via-blue-600 to-blue-500 rounded-[2.5rem] p-8 md:p-10 shadow-2xl overflow-hidden text-white group">
+          {/* Abstract Background Shapes */}
+          <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-3xl -translate-y-24 translate-x-24 group-hover:translate-x-20 transition-transform duration-1000"></div>
+          <div className="absolute bottom-0 left-0 w-72 h-72 bg-indigo-400/20 rounded-full blur-3xl translate-y-20 -translate-x-20 group-hover:-translate-x-16 transition-transform duration-1000"></div>
           
-          <div className="relative z-10">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-              <div>
-                <div className="flex items-center gap-4 mb-4">
-                  <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center">
-                    <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
-                    </svg>
-                  </div>
+          <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-8">
+            <div className="space-y-6">
+              <div className="flex items-center gap-5">
+                <div className="p-4 bg-white/20 backdrop-blur-md border border-white/30 rounded-2xl shadow-inner">
+                  <Folder className="w-10 h-10 text-white" strokeWidth={1.5} />
+                </div>
+                <div>
+                  <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-white mb-1">
+                    My Folders
+                  </h1>
+                  <p className="text-blue-100 text-lg font-light">
+                    Manage and organize your documents efficiently.
+                  </p>
+                </div>
+              </div>
+
+              {/* Header Stats */}
+              <div className="flex flex-wrap gap-4">
+                <div className="flex items-center gap-3 px-5 py-3 bg-white/10 backdrop-blur-md rounded-2xl border border-white/10 hover:bg-white/15 transition-colors">
+                  <Folder className="w-5 h-5 text-blue-200" />
                   <div>
-                    <h1 className="text-3xl font-bold">My Folders</h1>
-                    <p className="text-green-100 mt-2">Organize your documents into folders for better management</p>
+                    <span className="text-xs text-blue-200 uppercase tracking-wider font-semibold">Total</span>
+                    <div className="text-xl font-bold">{folders.length}</div>
                   </div>
                 </div>
-                
-                <div className="flex items-center gap-4">
-                  <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/20">
-                    <div className="text-xs text-green-100">Total Folders</div>
-                    <div className="font-semibold">{folders.length}</div>
-                  </div>
-                  <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/20">
-                    <div className="text-xs text-green-100">Documents</div>
-                    <div className="font-semibold">
+                <div className="flex items-center gap-3 px-5 py-3 bg-white/10 backdrop-blur-md rounded-2xl border border-white/10 hover:bg-white/15 transition-colors">
+                  <FileText className="w-5 h-5 text-blue-200" />
+                  <div>
+                    <span className="text-xs text-blue-200 uppercase tracking-wider font-semibold">Docs</span>
+                    <div className="text-xl font-bold">
                       {folders.reduce((total, folder) => total + (folder.documentCount || 0), 0)}
                     </div>
                   </div>
                 </div>
               </div>
-              
-              <button
-                onClick={handleCreateFolder}
-                className="inline-flex items-center gap-3 bg-white text-green-600 font-semibold px-6 py-3 rounded-xl hover:bg-green-50 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                </svg>
-                Create New Folder
-              </button>
+            </div>
+
+            <button
+              onClick={handleCreateFolder}
+              className="flex items-center justify-center gap-3 bg-white text-blue-600 px-8 py-4 rounded-2xl font-semibold shadow-lg shadow-blue-900/20 hover:shadow-xl hover:scale-[1.02] hover:bg-blue-50 active:scale-[0.98] transition-all duration-300 group/btn"
+            >
+              <div className="bg-blue-100 p-1.5 rounded-lg group-hover/btn:bg-blue-200 transition-colors">
+                <Plus className="w-5 h-5" strokeWidth={2.5} />
+              </div>
+              <span className="text-lg">Create New Folder</span>
+            </button>
+          </div>
+        </div>
+
+        {/* --- STATS OVERVIEW CARDS --- */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+           {/* Card 1 */}
+          <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1 group">
+            <div className="flex justify-between items-start">
+              <div>
+                <p className="text-slate-500 text-sm font-medium mb-1">Total Documents</p>
+                <h3 className="text-3xl font-bold text-slate-800">
+                  {folders.reduce((total, folder) => total + (folder.documentCount || 0), 0)}
+                </h3>
+              </div>
+              <div className="p-3 bg-blue-50 text-blue-600 rounded-2xl group-hover:bg-blue-600 group-hover:text-white transition-colors duration-300">
+                <FileText className="w-6 h-6" />
+              </div>
+            </div>
+          </div>
+
+          {/* Card 2 */}
+          <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1 group">
+            <div className="flex justify-between items-start">
+              <div>
+                <p className="text-slate-500 text-sm font-medium mb-1">Storage Used</p>
+                <h3 className="text-3xl font-bold text-slate-800">1.8 GB</h3>
+              </div>
+              <div className="p-3 bg-green-50 text-green-600 rounded-2xl group-hover:bg-green-600 group-hover:text-white transition-colors duration-300">
+                <HardDrive className="w-6 h-6" />
+              </div>
+            </div>
+          </div>
+
+          {/* Card 3 */}
+          <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1 group">
+            <div className="flex justify-between items-start">
+              <div>
+                <p className="text-slate-500 text-sm font-medium mb-1">Recently Added</p>
+                <h3 className="text-3xl font-bold text-slate-800">
+                  {folders.filter(f => new Date(f.createdAt) > new Date(Date.now() - 7*24*60*60*1000)).length}
+                </h3>
+              </div>
+              <div className="p-3 bg-purple-50 text-purple-600 rounded-2xl group-hover:bg-purple-600 group-hover:text-white transition-colors duration-300">
+                <Clock className="w-6 h-6" />
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Search and Filter */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl p-6 border border-white/40">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="relative flex-1">
+        {/* --- CONTROLS BAR (SEARCH & FILTER) --- */}
+        <div className="bg-white rounded-3xl p-4 md:p-5 border border-slate-100 shadow-lg shadow-slate-200/50 sticky top-4 z-20 backdrop-blur-xl bg-white/90 supports-[backdrop-filter]:bg-white/60">
+          <div className="flex flex-col md:flex-row gap-4 justify-between items-center">
+            {/* Search Input */}
+            <div className="relative w-full md:w-96 group">
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <Search className="h-5 w-5 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
+              </div>
               <input
                 type="text"
                 placeholder="Search folders..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-300 rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                className="block w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:bg-white transition-all duration-200"
               />
-              <svg className="w-5 h-5 text-gray-400 absolute left-4 top-1/2 transform -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
             </div>
-            
-            <div className="flex items-center gap-4">
-              <div className="text-sm text-gray-600">Sort by:</div>
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="bg-gray-50 border border-gray-300 rounded-xl px-4 py-2.5 text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-              >
-                <option value="newest">Newest First</option>
-                <option value="oldest">Oldest First</option>
-                <option value="name">Name A-Z</option>
-              </select>
+
+            {/* View & Sort Controls */}
+            <div className="flex items-center gap-3 w-full md:w-auto">
+              <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 w-full md:w-auto hover:border-blue-300 transition-colors cursor-pointer">
+                <Filter className="w-4 h-4 text-slate-500" />
+                <span className="text-sm text-slate-600 whitespace-nowrap">Sort by:</span>
+                <div className="relative flex-grow md:flex-grow-0">
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value)}
+                    className="appearance-none bg-transparent border-none text-slate-900 text-sm font-semibold focus:ring-0 cursor-pointer pr-6 w-full"
+                  >
+                    <option value="newest">Newest First</option>
+                    <option value="oldest">Oldest First</option>
+                    <option value="name">Name (A-Z)</option>
+                  </select>
+                  <ChevronDown className="w-4 h-4 text-slate-500 absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none" />
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Folders Grid */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl p-6 md:p-8 border border-white/40">
+        {/* --- GRID CONTENT SECTION --- */}
+        <div className="min-h-[400px]">
           {folders.length === 0 ? (
-            <div className="text-center py-16">
-              <div className="w-32 h-32 bg-gradient-to-r from-green-100 to-blue-100 rounded-full flex items-center justify-center mx-auto mb-8">
-                <svg className="w-16 h-16 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
-                </svg>
+            /* EMPTY STATE 1: No folders at all */
+            <div className="flex flex-col items-center justify-center py-20 bg-white rounded-3xl border border-dashed border-slate-300">
+              <div className="w-24 h-24 bg-blue-50 rounded-full flex items-center justify-center mb-6 animate-pulse-slow">
+                <LayoutGrid className="w-12 h-12 text-blue-500" />
               </div>
-              <h3 className="text-2xl font-bold text-gray-800 mb-4">No Folders Yet</h3>
-              <p className="text-gray-600 mb-8 max-w-md mx-auto">
-                Create your first folder to organize your documents and make them easier to find and manage
+              <h3 className="text-2xl font-bold text-slate-800 mb-2">No Folders Yet</h3>
+              <p className="text-slate-500 text-center max-w-md mb-8">
+                Your workspace is looking a bit empty. Create your first folder to start organizing your documents.
               </p>
               <button
                 onClick={handleCreateFolder}
-                className="inline-flex items-center gap-3 bg-gradient-to-r from-green-600 to-blue-600 text-white font-semibold px-8 py-3.5 rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300"
+                className="inline-flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-xl font-medium shadow-lg hover:bg-blue-700 hover:shadow-blue-600/30 transition-all transform hover:-translate-y-0.5"
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                </svg>
-                Create Your First Folder
+                <Plus className="w-5 h-5" />
+                Create First Folder
               </button>
             </div>
           ) : (
             <>
-              <div className="mb-8">
-                <h2 className="text-2xl font-bold text-gray-800 mb-2">
-                  All Folders ({filteredFolders.length})
+              <div className="flex items-center justify-between mb-6 px-2">
+                <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+                  All Folders 
+                  <span className="px-2 py-1 bg-slate-100 text-slate-600 text-xs rounded-lg border border-slate-200">
+                    {filteredFolders.length}
+                  </span>
                 </h2>
-                <p className="text-gray-600">Click on any folder to view its contents</p>
               </div>
-              
-              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                {filteredFolders.map((folder, index) => (
-                  <div key={folder._id} className="animate-slide-in" style={{animationDelay: `${index * 0.1}s`}}>
-                    <FolderCard
-                      folder={folder}
-                      onEdit={handleEditFolder}
-                      onDelete={handleDeleteFolder}
-                      onOpen={handleOpenFolder}
-                    />
+
+              {filteredFolders.length > 0 ? (
+                /* GRID OF FOLDERS */
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                  {filteredFolders.map((folder, index) => (
+                    <div 
+                      key={folder._id} 
+                      className="animate-fade-in-up" 
+                      style={{ animationDelay: `${index * 50}ms` }}
+                    >
+                      <FolderCard
+                        folder={folder}
+                        onEdit={handleEditFolder}
+                        onDelete={handleDeleteFolder}
+                        onOpen={handleOpenFolder}
+                      />
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                /* EMPTY STATE 2: Search yielded no results */
+                <div className="flex flex-col items-center justify-center py-20 bg-white/50 rounded-3xl">
+                  <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mb-4">
+                    <Search className="w-10 h-10 text-slate-400" />
                   </div>
-                ))}
-              </div>
-              
-              {searchQuery && filteredFolders.length === 0 && (
-                <div className="text-center py-12">
-                  <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                    <svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
-                  </div>
-                  <h3 className="text-xl font-semibold text-gray-800 mb-3">No folders found</h3>
-                  <p className="text-gray-600">Try a different search term or create a new folder</p>
+                  <h3 className="text-xl font-semibold text-slate-800 mb-2">No folders found</h3>
+                  <p className="text-slate-500">
+                    We couldn't find any folders matching "{searchQuery}"
+                  </p>
+                  <button 
+                    onClick={() => setSearchQuery("")}
+                    className="mt-4 text-blue-600 font-medium hover:underline"
+                  >
+                    Clear Search
+                  </button>
                 </div>
               )}
             </>
           )}
         </div>
-
-        {/* Quick Stats */}
-        <div className="grid gap-6 md:grid-cols-3">
-          <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow hover:shadow-md transition-shadow duration-300">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-sm text-gray-500 mb-1">Total Documents</div>
-                <div className="text-2xl font-bold text-gray-800">
-                  {folders.reduce((total, folder) => total + (folder.documentCount || 0), 0)}
-                </div>
-              </div>
-              <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-                <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-              </div>
-            </div>
-          </div>
-          
-          <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow hover:shadow-md transition-shadow duration-300">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-sm text-gray-500 mb-1">Storage Used</div>
-                <div className="text-2xl font-bold text-gray-800">1.8 GB</div>
-              </div>
-              <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
-                <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
-                </svg>
-              </div>
-            </div>
-          </div>
-          
-          <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow hover:shadow-md transition-shadow duration-300">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-sm text-gray-500 mb-1">Recently Added</div>
-                <div className="text-2xl font-bold text-gray-800">
-                  {folders.filter(f => new Date(f.createdAt) > new Date(Date.now() - 7*24*60*60*1000)).length}
-                </div>
-              </div>
-              <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
-                <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
 
+      {/* --- MODAL --- */}
       <FolderModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
@@ -313,48 +352,49 @@ const Folders = () => {
         folder={editingFolder}
       />
 
+      {/* --- GLOBAL STYLES & ANIMATIONS --- */}
       <style jsx global>{`
-        @keyframes slide-up {
-          from {
-            opacity: 0;
-            transform: translateY(20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        
-        @keyframes slide-in {
-          from {
-            opacity: 0;
-            transform: translateX(-10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateX(0);
-          }
-        }
-        
         @keyframes fade-in {
-          from {
-            opacity: 0;
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        
+        @keyframes fade-in-up {
+          from { 
+            opacity: 0; 
+            transform: translateY(20px); 
           }
-          to {
-            opacity: 1;
+          to { 
+            opacity: 1; 
+            transform: translateY(0); 
           }
         }
-        
-        .animate-slide-up {
-          animation: slide-up 0.6s ease-out;
-        }
-        
-        .animate-slide-in {
-          animation: slide-in 0.4s ease-out;
-        }
-        
+
         .animate-fade-in {
-          animation: fade-in 0.4s ease-out;
+          animation: fade-in 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        
+        .animate-fade-in-up {
+          animation: fade-in-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        .animate-pulse-slow {
+          animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        /* Custom scrollbar for better aesthetics */
+        ::-webkit-scrollbar {
+          width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+          background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+          background: #cbd5e1;
+          border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+          background: #94a3b8;
         }
       `}</style>
     </div>

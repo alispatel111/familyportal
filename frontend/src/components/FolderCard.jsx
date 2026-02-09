@@ -1,11 +1,21 @@
 "use client"
 
 import { useState } from "react"
+import { motion, AnimatePresence } from "framer-motion"
+import { 
+  Folder, 
+  Pencil, 
+  Trash2, 
+  Calendar, 
+  FileText, 
+  MoreVertical,
+  ArrowUpRight,
+  Layers
+} from "lucide-react"
 
 const FolderCard = ({ folder, onEdit, onDelete, onOpen }) => {
   const [isHovered, setIsHovered] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
-  const [isPressed, setIsPressed] = useState(false)
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString("en-US", {
@@ -28,7 +38,7 @@ const FolderCard = ({ folder, onEdit, onDelete, onOpen }) => {
       setIsDeleting(true)
       setTimeout(() => {
         onDelete(folder._id)
-      }, 300)
+      }, 500)
     }
   }
 
@@ -37,153 +47,138 @@ const FolderCard = ({ folder, onEdit, onDelete, onOpen }) => {
   }
 
   return (
-    <div
-      className={`relative group overflow-hidden rounded-3xl bg-gradient-to-br from-white to-gray-50 p-5 cursor-pointer transition-all duration-500 ${
-        isDeleting ? "opacity-0 scale-95" : "opacity-100 scale-100"
-      } ${isPressed ? "scale-[0.98] shadow-lg" : "shadow-md hover:shadow-2xl"} ${
-        isHovered ? "-translate-y-2" : ""
-      } border border-gray-200/80 hover:border-gray-300`}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-      onMouseDown={() => setIsPressed(true)}
-      onMouseUp={() => setIsPressed(false)}
-      onMouseOut={() => setIsPressed(false)}
-      onClick={handleOpen}
-    >
-      {/* 浮动粒子动画 */}
-      <div className="absolute inset-0 overflow-hidden">
-        {[...Array(3)].map((_, i) => (
-          <div
-            key={i}
-            className="absolute h-1 w-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-700"
-            style={{
-              backgroundColor: folder.color,
-              top: `${20 + i * 30}%`,
-              left: `${10 + i * 40}%`,
-              animation: `float ${3 + i}s ease-in-out infinite`,
-              animationDelay: `${i * 0.5}s`,
-            }}
-          />
-        ))}
-      </div>
-
-      {/* 渐变背景效果 */}
-      <div
-        className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-all duration-700"
-        style={{
-          background: `radial-gradient(circle at 70% 20%, ${folder.color}15, transparent 50%)`,
-        }}
-      />
-
-      {/* 文件夹图标容器 */}
-      <div className="relative mb-4">
-        <div className="relative inline-block">
-          {/* 图标阴影效果 */}
-          <div
-            className="absolute inset-0 rounded-2xl blur-md opacity-0 group-hover:opacity-70 transition-opacity duration-500"
+    <AnimatePresence>
+      {!isDeleting && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.5, filter: "blur(10px)" }}
+          whileHover={{ y: -8 }}
+          whileTap={{ scale: 0.98 }}
+          transition={{ 
+            type: "spring", 
+            stiffness: 260, 
+            damping: 20 
+          }}
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => setIsHovered(false)}
+          onClick={handleOpen}
+          className="relative group w-full max-w-sm sm:max-w-md mx-auto"
+        >
+          {/* Outer Glow Effect based on folder color */}
+          <div 
+            className="absolute -inset-1 rounded-[2.5rem] opacity-0 group-hover:opacity-20 blur-2xl transition-opacity duration-500 pointer-events-none"
             style={{ backgroundColor: folder.color }}
           />
-          
-          {/* 主图标 */}
-          <div
-            className={`relative flex h-16 w-16 items-center justify-center rounded-2xl text-white transition-all duration-500 ${
-              isHovered ? "scale-110 rotate-3" : ""
-            }`}
-            style={{
-              backgroundColor: folder.color,
-              boxShadow: `0 8px 32px -8px ${folder.color}60, 0 4px 16px -4px ${folder.color}40, inset 0 1px 1px ${folder.color}30`,
-            }}
-          >
-            <svg className="h-8 w-8" fill="currentColor" viewBox="0 0 20 20">
-              <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
-            </svg>
-          </div>
-        </div>
-        
-        {/* 文档计数徽章 */}
-        <div className="absolute -top-1 -right-1">
-          <div className="relative">
-            <div className="absolute inset-0 animate-ping rounded-full bg-gradient-to-r from-red-500 to-orange-500 opacity-60"></div>
-            <div className="relative flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-r from-red-600 to-orange-500 text-xs font-bold text-white shadow-lg">
-              {folder.documentCount || 0}
+
+          {/* Main Card Container */}
+          <div className="relative overflow-hidden rounded-[2.2rem] border border-white/40 bg-white/70 backdrop-blur-xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] group-hover:shadow-[0_20px_50px_rgba(0,0,0,0.1)] transition-all duration-500">
+            
+            {/* Background Decorative Element */}
+            <div 
+              className="absolute top-0 right-0 w-32 h-32 -mr-10 -mt-10 rounded-full opacity-10 group-hover:scale-150 transition-transform duration-700"
+              style={{ backgroundColor: folder.color }}
+            />
+
+            <div className="p-5 sm:p-7">
+              {/* Top Row: Icon & Action Menu */}
+              <div className="flex items-start justify-between">
+                <div className="relative">
+                  {/* Dynamic Icon Box */}
+                  <motion.div
+                    animate={isHovered ? { rotate: [0, -10, 10, 0] } : {}}
+                    className="relative flex h-14 w-14 sm:h-16 sm:w-16 items-center justify-center rounded-2xl shadow-lg transition-transform"
+                    style={{
+                      background: `linear-gradient(135deg, ${folder.color} 0%, ${folder.color}cc 100%)`,
+                      boxShadow: `0 10px 20px -5px ${folder.color}66`
+                    }}
+                  >
+                    <Folder className="h-7 w-7 sm:h-8 sm:w-8 text-white" strokeWidth={2} />
+                    
+                    {/* Glossy Reflection */}
+                    <div className="absolute inset-0 rounded-2xl bg-gradient-to-tr from-white/30 to-transparent opacity-50" />
+                  </motion.div>
+
+                  {/* Document Badge */}
+                  <div className="absolute -top-2 -right-2 flex h-6 w-6 sm:h-7 sm:w-7 items-center justify-center rounded-full bg-slate-900 text-[10px] font-bold text-white ring-4 ring-white shadow-xl">
+                    {folder.documentCount || 0}
+                  </div>
+                </div>
+
+                <div className="flex gap-1">
+                   <button className="p-2 hover:bg-slate-100 rounded-full transition-colors">
+                     <MoreVertical className="h-5 w-5 text-slate-400" />
+                   </button>
+                </div>
+              </div>
+
+              {/* Text Information */}
+              <div className="mt-6 space-y-2">
+                <div className="flex items-center gap-2">
+                  <h3 className="text-xl sm:text-2xl font-black text-slate-800 tracking-tight line-clamp-1">
+                    {folder.name}
+                  </h3>
+                  <ArrowUpRight className="h-5 w-5 text-slate-300 opacity-0 group-hover:opacity-100 transition-all group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                </div>
+                
+                <p className="text-sm sm:text-base text-slate-500 line-clamp-2 leading-relaxed font-medium">
+                  {folder.description || "Organize your creative assets and documents seamlessly."}
+                </p>
+              </div>
+
+              {/* Stats & Metadata - Responsive Grid */}
+              <div className="mt-6 flex flex-wrap gap-2 sm:gap-3">
+                <div className="flex items-center gap-1.5 rounded-full bg-slate-100/50 border border-slate-200/50 px-3 py-1.5 text-[11px] sm:text-xs font-bold text-slate-600">
+                  <Layers className="h-3.5 w-3.5" />
+                  <span>{folder.documentCount || 0} ITEMS</span>
+                </div>
+                <div className="flex items-center gap-1.5 rounded-full bg-slate-100/50 border border-slate-200/50 px-3 py-1.5 text-[11px] sm:text-xs font-bold text-slate-600">
+                  <Calendar className="h-3.5 w-3.5" />
+                  <span>{formatDate(folder.createdAt)}</span>
+                </div>
+              </div>
+
+              {/* Bottom Actions Area */}
+              <div className="mt-8 flex items-center justify-between border-t border-slate-100 pt-5">
+                <span className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-widest">
+                  Updated {formatDate(folder.createdAt)}
+                </span>
+
+                <div className="flex items-center gap-2">
+                  {/* Edit Button */}
+                  <motion.button
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    onClick={handleEdit}
+                    className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-900 hover:text-white transition-all duration-300 shadow-sm"
+                  >
+                    <Pencil className="h-4.5 w-4.5" />
+                  </motion.button>
+
+                  {/* Delete Button */}
+                  <motion.button
+                    whileHover={{ scale: 1.1, backgroundColor: "#ef4444", color: "#ffffff" }}
+                    whileTap={{ scale: 0.9 }}
+                    onClick={handleDelete}
+                    className="flex h-10 w-10 items-center justify-center rounded-xl bg-rose-50 text-rose-500 transition-all duration-300 shadow-sm"
+                  >
+                    <Trash2 className="h-4.5 w-4.5" />
+                  </motion.button>
+                </div>
+              </div>
             </div>
+
+            {/* Subtle Animated Bottom Bar */}
+            <motion.div 
+              className="absolute bottom-0 left-0 h-1.5 w-full origin-left"
+              initial={{ scaleX: 0 }}
+              animate={{ scaleX: isHovered ? 1 : 0 }}
+              style={{ backgroundColor: folder.color }}
+            />
           </div>
-        </div>
-      </div>
-
-      {/* 文件夹信息 */}
-      <div className="relative">
-        <h3 className="mb-2 text-lg font-bold text-gray-900 line-clamp-2 leading-tight transition-all duration-300 group-hover:text-gray-800">
-          {folder.name}
-        </h3>
-
-        {folder.description && (
-          <p className="mb-3 text-sm text-gray-600 line-clamp-2 leading-relaxed">
-            {folder.description}
-          </p>
-        )}
-
-        {/* 元数据 */}
-        <div className="mb-4 flex flex-wrap items-center gap-3">
-          <div className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-3 py-1 text-xs text-gray-700">
-            <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clipRule="evenodd" />
-            </svg>
-            <span>{folder.documentCount || 0} docs</span>
-          </div>
-          
-          <div className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-3 py-1 text-xs text-gray-700">
-            <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
-            </svg>
-            <span>{formatDate(folder.createdAt)}</span>
-          </div>
-        </div>
-      </div>
-
-      {/* 操作按钮 */}
-      <div className="relative flex items-center justify-between pt-4 border-t border-gray-200/50">
-        <div className="text-xs text-gray-500">
-          Created {formatDate(folder.createdAt)}
-        </div>
-
-        <div className="flex items-center gap-2">
-          {/* 编辑按钮 */}
-          <button
-            onClick={handleEdit}
-            className="group/btn relative flex h-10 w-10 items-center justify-center rounded-xl transition-all duration-300 hover:scale-110 active:scale-95"
-            title="Edit folder"
-          >
-            <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-gray-700 to-gray-900 opacity-0 transition-all duration-300 group-hover/btn:opacity-100"></div>
-            <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-gray-600 to-gray-800 opacity-100 group-hover/btn:opacity-0"></div>
-            <svg className="relative h-5 w-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-            </svg>
-          </button>
-
-          {/* 删除按钮 */}
-          <button
-            onClick={handleDelete}
-            className="group/btn relative flex h-10 w-10 items-center justify-center rounded-xl transition-all duration-300 hover:scale-110 active:scale-95"
-            title="Delete folder"
-          >
-            <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-red-600 to-pink-600 opacity-0 transition-all duration-300 group-hover/btn:opacity-100"></div>
-            <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-red-500 to-pink-500 opacity-100 group-hover/btn:opacity-0"></div>
-            <svg className="relative h-5 w-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-            </svg>
-          </button>
-        </div>
-      </div>
-
-      {/* 悬停边框效果 */}
-      <div
-        className="absolute inset-0 rounded-3xl pointer-events-none transition-all duration-700 opacity-0 group-hover:opacity-100"
-        style={{
-          boxShadow: `inset 0 0 0 2px ${folder.color}30`,
-        }}
-      />
-    </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   )
 }
 

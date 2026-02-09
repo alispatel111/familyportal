@@ -737,14 +737,32 @@
 
 
 
-
 "use client"
 
 import { useState, useEffect } from "react"
 import axios from "axios"
 import { motion, AnimatePresence } from "framer-motion"
+import { 
+  Fingerprint, 
+  ShieldCheck, 
+  Smartphone, 
+  Lock, 
+  Unlock, 
+  AlertTriangle, 
+  CheckCircle, 
+  XCircle, 
+  ChevronDown, 
+  Loader2, 
+  ShieldAlert,
+  Globe,
+  MonitorSmartphone,
+  Info
+} from "lucide-react"
 
 const BiometricSetup = ({ user, onUpdate }) => {
+  // ==========================================
+  // LOGIC SECTION (UNCHANGED)
+  // ==========================================
   const [biometricStatus, setBiometricStatus] = useState({ supported: false, enabled: false, available: false })
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState("")
@@ -940,7 +958,7 @@ const BiometricSetup = ({ user, onUpdate }) => {
 
       if (verifyResponse.data.verified) {
         setMessage(
-          `🎉 Biometric authentication enabled successfully${appContext.isApplication ? ` for ${appContext.context} app` : ""}!`,
+          `Biometric authentication enabled successfully${appContext.isApplication ? ` for ${appContext.context} app` : ""}!`,
         )
         setBiometricStatus((prev) => ({ ...prev, enabled: true }))
         if (onUpdate) onUpdate()
@@ -1003,389 +1021,360 @@ const BiometricSetup = ({ user, onUpdate }) => {
 
   const appContext = detectApplicationContext()
 
+  // ==========================================
+  // MODERNIZED UI SECTION
+  // ==========================================
+
+  // Animation variants
+  const containerVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: "easeOut" } },
+  }
+
+  const cardVariants = {
+    hover: { scale: 1.02, transition: { duration: 0.2 } },
+    tap: { scale: 0.98 },
+  }
+
+  // --- STATE 1: NOT SUPPORTED ---
   if (!biometricStatus.supported) {
     return (
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="rounded-3xl border border-gray-200 bg-white/80 backdrop-blur-sm p-8 shadow-2xl"
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+        className="relative overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-xl"
       >
-        <div className="flex items-center space-x-3 mb-6">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-red-100 to-orange-100">
-            <span className="text-2xl">🔐</span>
-          </div>
-          <div>
-            <h3 className="text-xl font-bold text-gray-900">Biometric Authentication</h3>
-            <p className="text-sm text-gray-600">Secure your account with biometrics</p>
-          </div>
-        </div>
-
-        <motion.div
-          initial={{ scale: 0.95 }}
-          animate={{ scale: 1 }}
-          className="rounded-2xl border border-red-200 bg-gradient-to-br from-red-50/80 to-white p-6"
-        >
-          <div className="flex items-start space-x-4">
-            <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-red-100">
-              <span className="text-red-600">⚠️</span>
+        <div className="absolute top-0 left-0 w-full h-1 bg-red-500" />
+        <div className="p-8">
+          <div className="flex items-center gap-4 mb-6">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-red-50 text-red-500 shadow-sm ring-1 ring-red-100">
+              <ShieldAlert className="h-7 w-7" />
             </div>
             <div>
-              <h4 className="font-semibold text-red-800">Not Supported</h4>
-              <p className="mt-1 text-sm text-red-700">
-                Biometric authentication is not supported on this{" "}
-                {appContext.isApplication ? `${appContext.context} app` : "browser or device"}.
-              </p>
-              <p className="mt-3 text-sm text-gray-600">
-                {appContext.isApplication
-                  ? `To use biometric authentication in this ${appContext.context} app, ensure your device has biometric capabilities and the app has proper permissions.`
-                  : "Please use a modern browser on a device with fingerprint sensor, face recognition, or other biometric capabilities."}
-              </p>
+              <h3 className="text-xl font-bold text-gray-900">Biometric Not Supported</h3>
+              <p className="text-sm text-gray-500">Hardware requirement not met</p>
             </div>
           </div>
-        </motion.div>
+
+          <div className="rounded-2xl border border-red-100 bg-red-50/50 p-6 backdrop-blur-sm">
+            <div className="flex items-start gap-4">
+              <AlertTriangle className="h-6 w-6 text-red-500 flex-shrink-0 mt-1" />
+              <div>
+                <h4 className="font-semibold text-red-800">Incompatible Environment</h4>
+                <p className="mt-2 text-sm leading-relaxed text-red-700/80">
+                  Biometric authentication is not supported on this{" "}
+                  <span className="font-semibold">{appContext.isApplication ? `${appContext.context} app` : "browser or device"}</span>.
+                </p>
+                <p className="mt-3 text-sm text-gray-600">
+                  {appContext.isApplication
+                    ? `To use biometric authentication, ensure your device has hardware capabilities and the app has permissions.`
+                    : "Please try using a modern browser (Chrome, Edge, Safari) on a device with a fingerprint sensor or Face ID."}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
       </motion.div>
     )
   }
 
+  // --- STATE 2: NOT AVAILABLE ---
   if (!biometricStatus.available) {
     return (
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="rounded-3xl border border-gray-200 bg-white/80 backdrop-blur-sm p-8 shadow-2xl"
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+        className="relative overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-xl"
       >
-        <div className="flex items-center space-x-3 mb-6">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-amber-100 to-yellow-100">
-            <span className="text-2xl">🔐</span>
-          </div>
-          <div>
-            <h3 className="text-xl font-bold text-gray-900">Biometric Authentication</h3>
-            <p className="text-sm text-gray-600">Secure your account with biometrics</p>
-          </div>
-        </div>
-
-        <motion.div
-          initial={{ scale: 0.95 }}
-          animate={{ scale: 1 }}
-          className="rounded-2xl border border-amber-200 bg-gradient-to-br from-amber-50/80 to-white p-6"
-        >
-          <div className="flex items-start space-x-4">
-            <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-amber-100">
-              <span className="text-amber-600">⚠️</span>
+        <div className="absolute top-0 left-0 w-full h-1 bg-amber-500" />
+        <div className="p-8">
+          <div className="flex items-center gap-4 mb-6">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-50 text-amber-500 shadow-sm ring-1 ring-amber-100">
+              <Fingerprint className="h-7 w-7" />
             </div>
             <div>
-              <h4 className="font-semibold text-amber-800">No Biometric Authenticator</h4>
-              <p className="mt-1 text-sm text-amber-700">
-                No biometric authenticator available on this device.
-              </p>
-              <p className="mt-3 text-sm text-gray-600">
-                {appContext.isApplication
-                  ? `Please ensure your device has fingerprint, face recognition, or PIN authentication enabled and that this ${appContext.context} app has the necessary permissions.`
-                  : "Please ensure your device has fingerprint, face recognition, or PIN authentication enabled in your system settings."}
-              </p>
+              <h3 className="text-xl font-bold text-gray-900">Sensor Unavailable</h3>
+              <p className="text-sm text-gray-500">Device security settings check</p>
             </div>
           </div>
-        </motion.div>
+
+          <div className="rounded-2xl border border-amber-100 bg-amber-50/50 p-6 backdrop-blur-sm">
+            <div className="flex items-start gap-4">
+              <AlertTriangle className="h-6 w-6 text-amber-600 flex-shrink-0 mt-1" />
+              <div>
+                <h4 className="font-semibold text-amber-800">Setup Required</h4>
+                <p className="mt-2 text-sm leading-relaxed text-amber-800/80">
+                  We couldn't detect an active biometric authenticator.
+                </p>
+                <div className="mt-4 flex flex-col gap-2 text-sm text-gray-600">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4 text-amber-500" />
+                    <span>Check if device screen lock (PIN/Pattern) is enabled.</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4 text-amber-500" />
+                    <span>Ensure Fingerprint/Face ID is registered in OS settings.</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </motion.div>
     )
   }
 
+  // --- STATE 3: MAIN DASHBOARD ---
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="rounded-3xl border border-gray-200 bg-white/80 backdrop-blur-sm p-8 shadow-2xl"
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+      className="group relative rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl shadow-slate-200/50 transition-all duration-300 md:p-8"
     >
-      {/* Header */}
-      <div className="mb-8">
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center space-x-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-blue-100 to-purple-100">
-              <span className="text-2xl">🔐</span>
-            </div>
-            <div>
-              <h3 className="text-2xl font-bold text-gray-900">Biometric Authentication</h3>
-              <p className="text-sm text-gray-600">
-                Secure your account with fingerprint, face recognition, or device authentication
-              </p>
-            </div>
+      {/* Decorative Background Elements */}
+      <div className="absolute top-0 right-0 -mt-10 -mr-10 h-64 w-64 rounded-full bg-indigo-50 blur-3xl opacity-50 pointer-events-none"></div>
+      <div className="absolute bottom-0 left-0 -mb-10 -ml-10 h-64 w-64 rounded-full bg-blue-50 blur-3xl opacity-50 pointer-events-none"></div>
+
+      {/* Header Section */}
+      <div className="relative z-10 mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-lg shadow-indigo-200">
+            <Fingerprint className="h-8 w-8" />
           </div>
-          {appContext.isApplication && (
-            <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700">
-              {appContext.context} App
-            </span>
+          <div>
+            <h3 className="text-2xl font-bold text-slate-900 tracking-tight">Biometric Security</h3>
+            <p className="text-sm text-slate-500 font-medium">Passkeys & Hardware Authentication</p>
+          </div>
+        </div>
+        
+        {appContext.isApplication && (
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-indigo-50 px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-indigo-700 ring-1 ring-inset ring-indigo-700/10">
+            <Smartphone className="h-3.5 w-3.5" />
+            {appContext.context} App
+          </span>
+        )}
+      </div>
+
+      {/* Main Action Area */}
+      <div className="relative z-10 mb-10">
+        <p className="mb-6 text-slate-600 leading-relaxed max-w-2xl">
+          Enhance your account protection by enabling biometric authentication. 
+          Login securely using your <span className="font-semibold text-slate-800">Fingerprint, Face ID, or Windows Hello</span> 
+          without needing to type a password.
+        </p>
+
+        {/* Dynamic Buttons */}
+        <div className="flex flex-col sm:flex-row gap-4">
+          {!biometricStatus.enabled ? (
+            <motion.button
+              whileHover={{ scale: 1.02, boxShadow: "0 10px 25px -5px rgba(79, 70, 229, 0.4)" }}
+              whileTap={{ scale: 0.97 }}
+              onClick={registerBiometric}
+              disabled={loading}
+              className="relative overflow-hidden flex-1 sm:flex-none inline-flex items-center justify-center gap-3 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 px-8 py-4 text-base font-semibold text-white shadow-lg transition-all duration-300 disabled:opacity-70 disabled:cursor-not-allowed"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                  <span>Configuring Device...</span>
+                </>
+              ) : (
+                <>
+                  <Fingerprint className="h-5 w-5" />
+                  <span>Activate Biometric Login</span>
+                </>
+              )}
+            </motion.button>
+          ) : (
+            <motion.button
+              whileHover={{ scale: 1.02, backgroundColor: "#fee2e2" }}
+              whileTap={{ scale: 0.97 }}
+              onClick={disableBiometric}
+              disabled={loading}
+              className="flex-1 sm:flex-none inline-flex items-center justify-center gap-3 rounded-xl border-2 border-red-100 bg-red-50 px-8 py-4 text-base font-semibold text-red-600 transition-all duration-300 hover:border-red-200 hover:text-red-700 disabled:opacity-70"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                  <span>Processing...</span>
+                </>
+              ) : (
+                <>
+                  <Lock className="h-5 w-5" />
+                  <span>Disable Biometrics</span>
+                </>
+              )}
+            </motion.button>
           )}
         </div>
       </div>
 
-      {/* Status Indicators */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-        {[
-          {
-            label: "Browser Support",
-            value: biometricStatus.supported,
-            icon: "🌐",
-            color: "green",
-          },
-          {
-            label: "Device Capability",
-            value: biometricStatus.available,
-            icon: "📱",
-            color: "blue",
-          },
-          {
-            label: "Current Status",
-            value: biometricStatus.enabled,
-            icon: biometricStatus.enabled ? "🔓" : "🔒",
-            color: biometricStatus.enabled ? "green" : "amber",
-          },
-        ].map((status, index) => (
-          <motion.div
-            key={index}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.1 }}
-            className={`rounded-2xl border p-5 transition-all duration-300 hover:shadow-lg ${
-              status.value
-                ? "border-green-200 bg-gradient-to-br from-green-50/80 to-white"
-                : "border-red-200 bg-gradient-to-br from-red-50/80 to-white"
-            }`}
-          >
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-2xl">{status.icon}</span>
-              <span
-                className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                  status.value
-                    ? "bg-green-100 text-green-700"
-                    : "bg-red-100 text-red-700"
-                }`}
-              >
-                {status.value ? "Available" : "Unavailable"}
-              </span>
-            </div>
-            <h4 className="text-sm font-semibold text-gray-700">{status.label}</h4>
-          </motion.div>
-        ))}
-      </div>
-
-      {/* Messages */}
-      <AnimatePresence>
+      {/* Animated Alerts */}
+      <AnimatePresence mode="wait">
         {message && (
           <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            className="mb-6 rounded-2xl border border-green-200 bg-gradient-to-br from-green-50/80 to-white p-5"
+            initial={{ opacity: 0, height: 0, y: -10 }}
+            animate={{ opacity: 1, height: "auto", y: 0 }}
+            exit={{ opacity: 0, height: 0, y: -10 }}
+            className="mb-8 overflow-hidden"
           >
-            <div className="flex items-center space-x-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-100">
-                <span className="text-green-600">✅</span>
-              </div>
-              <p className="text-sm font-medium text-green-800">{message}</p>
+            <div className="rounded-xl border border-emerald-200 bg-emerald-50/80 p-4 flex items-center gap-3 text-emerald-800 shadow-sm backdrop-blur-sm">
+              <CheckCircle className="h-5 w-5 flex-shrink-0 text-emerald-600" />
+              <span className="font-medium text-sm">{message}</span>
             </div>
           </motion.div>
         )}
 
         {error && (
           <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            className="mb-6 rounded-2xl border border-red-200 bg-gradient-to-br from-red-50/80 to-white p-5"
+            initial={{ opacity: 0, height: 0, y: -10 }}
+            animate={{ opacity: 1, height: "auto", y: 0 }}
+            exit={{ opacity: 0, height: 0, y: -10 }}
+            className="mb-8 overflow-hidden"
           >
-            <div className="flex items-center space-x-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-100">
-                <span className="text-red-600">❌</span>
-              </div>
-              <p className="text-sm font-medium text-red-800">{error}</p>
+            <div className="rounded-xl border border-red-200 bg-red-50/80 p-4 flex items-center gap-3 text-red-800 shadow-sm backdrop-blur-sm">
+              <XCircle className="h-5 w-5 flex-shrink-0 text-red-600" />
+              <span className="font-medium text-sm">{error}</span>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Action Button */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.3 }}
-        className="mb-8"
-      >
-        {!biometricStatus.enabled ? (
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={registerBiometric}
-            disabled={loading}
-            className="w-full rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 py-4 text-white font-semibold shadow-lg hover:shadow-xl disabled:opacity-70 transition-all duration-300"
-          >
-            {loading ? (
-              <div className="flex items-center justify-center space-x-3">
-                <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                <span>Setting up Biometrics...</span>
-              </div>
-            ) : (
-              <div className="flex items-center justify-center space-x-3">
-                <span className="text-xl">👆</span>
-                <span>Enable Biometric Login</span>
-              </div>
-            )}
-          </motion.button>
-        ) : (
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={disableBiometric}
-            disabled={loading}
-            className="w-full rounded-xl border-2 border-red-300 bg-gradient-to-br from-white to-red-50 py-4 text-red-600 font-semibold shadow-sm hover:shadow-md disabled:opacity-70 transition-all duration-300"
-          >
-            {loading ? (
-              <div className="flex items-center justify-center space-x-3">
-                <div className="h-5 w-5 animate-spin rounded-full border-2 border-red-600 border-t-transparent" />
-                <span>Disabling...</span>
-              </div>
-            ) : (
-              <div className="flex items-center justify-center space-x-3">
-                <span className="text-xl">🔒</span>
-                <span>Disable Biometric Login</span>
-              </div>
-            )}
-          </motion.button>
-        )}
-      </motion.div>
+      {/* Status Grid Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-8 relative z-10">
+        <motion.div variants={cardVariants} whileHover="hover" className="rounded-2xl border border-slate-100 bg-slate-50/50 p-5 backdrop-blur-sm transition-colors hover:border-indigo-100 hover:bg-white">
+          <div className="mb-2 flex items-center justify-between">
+            <span className="text-xs font-semibold uppercase text-slate-400 tracking-wider">Environment</span>
+            {biometricStatus.supported ? <CheckCircle className="h-4 w-4 text-emerald-500" /> : <XCircle className="h-4 w-4 text-red-500" />}
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="rounded-lg bg-white p-2 shadow-sm ring-1 ring-slate-100">
+              {appContext.isApplication ? <Smartphone className="h-5 w-5 text-indigo-500" /> : <Globe className="h-5 w-5 text-blue-500" />}
+            </div>
+            <div>
+              <div className="text-sm font-bold text-slate-700">Supported</div>
+              <div className="text-xs text-slate-500">System Check Passed</div>
+            </div>
+          </div>
+        </motion.div>
 
-      {/* Details Toggle */}
-      <motion.div className="mb-6">
+        <motion.div variants={cardVariants} whileHover="hover" className="rounded-2xl border border-slate-100 bg-slate-50/50 p-5 backdrop-blur-sm transition-colors hover:border-indigo-100 hover:bg-white">
+          <div className="mb-2 flex items-center justify-between">
+            <span className="text-xs font-semibold uppercase text-slate-400 tracking-wider">Hardware</span>
+            {biometricStatus.available ? <CheckCircle className="h-4 w-4 text-emerald-500" /> : <XCircle className="h-4 w-4 text-amber-500" />}
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="rounded-lg bg-white p-2 shadow-sm ring-1 ring-slate-100">
+              <MonitorSmartphone className="h-5 w-5 text-indigo-500" />
+            </div>
+            <div>
+              <div className="text-sm font-bold text-slate-700">Available</div>
+              <div className="text-xs text-slate-500">Sensor Detected</div>
+            </div>
+          </div>
+        </motion.div>
+
+        <motion.div variants={cardVariants} whileHover="hover" className={`rounded-2xl border p-5 backdrop-blur-sm transition-all ${biometricStatus.enabled ? 'bg-emerald-50/30 border-emerald-100' : 'bg-slate-50/50 border-slate-100'}`}>
+          <div className="mb-2 flex items-center justify-between">
+            <span className="text-xs font-semibold uppercase text-slate-400 tracking-wider">Status</span>
+            <div className={`h-2 w-2 rounded-full ${biometricStatus.enabled ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300'}`} />
+          </div>
+          <div className="flex items-center gap-3">
+            <div className={`rounded-lg p-2 shadow-sm ring-1 ${biometricStatus.enabled ? 'bg-emerald-100 ring-emerald-200' : 'bg-white ring-slate-100'}`}>
+              {biometricStatus.enabled ? <ShieldCheck className="h-5 w-5 text-emerald-600" /> : <Unlock className="h-5 w-5 text-slate-400" />}
+            </div>
+            <div>
+              <div className={`text-sm font-bold ${biometricStatus.enabled ? 'text-emerald-700' : 'text-slate-700'}`}>
+                {biometricStatus.enabled ? 'Active' : 'Disabled'}
+              </div>
+              <div className="text-xs text-slate-500">Current State</div>
+            </div>
+          </div>
+        </motion.div>
+      </div>
+
+      {/* Accordion / Details Section */}
+      <div className="relative z-10 border-t border-slate-100 pt-6">
         <button
           onClick={() => setShowDetails(!showDetails)}
-          className="flex w-full items-center justify-between rounded-xl border border-gray-200 bg-gray-50/50 p-4 hover:bg-gray-50 transition-all duration-300"
+          className="group flex w-full items-center justify-between rounded-xl bg-slate-50 p-4 text-left transition-all hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
         >
-          <span className="font-medium text-gray-700">How it works & Benefits</span>
-          <motion.span
-            animate={{ rotate: showDetails ? 180 : 0 }}
-            className="text-gray-500"
-          >
-            ▼
-          </motion.span>
-        </button>
-      </motion.div>
-
-      {/* Details Content */}
-      <AnimatePresence>
-        {showDetails && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            className="space-y-6"
-          >
-            {/* Features Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <motion.div
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                className="rounded-2xl border border-blue-100 bg-gradient-to-br from-blue-50/80 to-white p-5"
-              >
-                <h4 className="mb-3 flex items-center space-x-2 text-sm font-semibold text-gray-800">
-                  <span className="text-blue-500">✅</span>
-                  <span>Supported Methods</span>
-                </h4>
-                <ul className="space-y-2">
-                  {["Fingerprint authentication", "Face recognition", "Device PIN/Password", "Hardware security keys"].map((method, i) => (
-                    <li key={i} className="flex items-center space-x-2 text-sm text-gray-600">
-                      <span className="text-blue-400">•</span>
-                      <span>{method}</span>
-                    </li>
-                  ))}
-                </ul>
-              </motion.div>
-
-              <motion.div
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                className="rounded-2xl border border-green-100 bg-gradient-to-br from-green-50/80 to-white p-5"
-              >
-                <h4 className="mb-3 flex items-center space-x-2 text-sm font-semibold text-gray-800">
-                  <span className="text-green-500">🚀</span>
-                  <span>Security Benefits</span>
-                </h4>
-                <ul className="space-y-2">
-                  {["Faster login process", "Enhanced security", "No password required", "Device-specific authentication"].map((benefit, i) => (
-                    <li key={i} className="flex items-center space-x-2 text-sm text-gray-600">
-                      <span className="text-green-400">•</span>
-                      <span>{benefit}</span>
-                    </li>
-                  ))}
-                </ul>
-              </motion.div>
+          <div className="flex items-center gap-3">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white shadow-sm text-indigo-500">
+              <Info className="h-4 w-4" />
             </div>
-
-            {/* Setup Steps */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="rounded-2xl border border-purple-100 bg-gradient-to-br from-purple-50/80 to-white p-6"
-            >
-              <h4 className="mb-4 flex items-center space-x-2 text-sm font-semibold text-gray-800">
-                <span className="text-purple-500">📋</span>
-                <span>Setup Instructions</span>
-              </h4>
-              <div className="space-y-4">
-                {[
-                  "Click 'Enable Biometric Login' button",
-                  "Follow your device's biometric prompt",
-                  "Confirm the authentication",
-                  "Biometric login is now active!",
-                ].map((step, index) => (
-                  <div key={index} className="flex items-start space-x-3">
-                    <div className="flex h-6 w-6 items-center justify-center rounded-full bg-purple-100 text-xs font-bold text-purple-600">
-                      {index + 1}
-                    </div>
-                    <p className="flex-1 text-sm text-gray-600">{step}</p>
-                  </div>
-                ))}
-              </div>
-            </motion.div>
-
-            {/* Troubleshooting */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="rounded-2xl border border-amber-100 bg-gradient-to-br from-amber-50/80 to-white p-6"
-            >
-              <h4 className="mb-4 flex items-center space-x-2 text-sm font-semibold text-gray-800">
-                <span className="text-amber-500">⚠️</span>
-                <span>Troubleshooting</span>
-              </h4>
-              <div className="space-y-2">
-                {[
-                  "Make sure you're logged in properly",
-                  "Enable device lock screen",
-                  "Add fingerprint/face in device settings",
-                  appContext.isApplication ? "Grant biometric permissions to the app" : "Use HTTPS connection",
-                  "Restart if authentication fails",
-                ].map((tip, index) => (
-                  <div key={index} className="flex items-center space-x-2 text-sm text-gray-600">
-                    <span className="text-amber-400">•</span>
-                    <span>{tip}</span>
-                  </div>
-                ))}
-              </div>
-            </motion.div>
+            <span className="font-semibold text-slate-700 group-hover:text-indigo-600 transition-colors">How it works & Benefits</span>
+          </div>
+          <motion.div
+            animate={{ rotate: showDetails ? 180 : 0 }}
+            transition={{ duration: 0.2 }}
+          >
+            <ChevronDown className="h-5 w-5 text-slate-400" />
           </motion.div>
-        )}
-      </AnimatePresence>
+        </button>
 
-      {/* Footer Note */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.5 }}
-        className="mt-8 pt-6 border-t border-gray-200 text-center"
-      >
-        <p className="text-xs text-gray-500">
-          Secure authentication powered by WebAuthn • Your biometric data never leaves your device
-        </p>
-      </motion.div>
+        <AnimatePresence>
+          {showDetails && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.3, ease: "easeInOut" }}
+              className="overflow-hidden"
+            >
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6">
+                {/* Benefits List */}
+                <div className="rounded-2xl bg-gradient-to-br from-white to-blue-50/30 p-5 border border-slate-100 shadow-sm">
+                  <h4 className="flex items-center gap-2 mb-4 font-semibold text-slate-800">
+                    <ShieldCheck className="h-4 w-4 text-indigo-500" />
+                    Security Benefits
+                  </h4>
+                  <ul className="space-y-3">
+                    {[
+                      "End-to-end encrypted authentication",
+                      "Phishing-resistant (WebAuthn Standard)",
+                      "No password transmission",
+                      "Instant login experience"
+                    ].map((item, idx) => (
+                      <li key={idx} className="flex items-start gap-2.5 text-sm text-slate-600">
+                        <CheckCircle className="h-4 w-4 text-emerald-500 mt-0.5 shrink-0" />
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                {/* Troubleshooting List */}
+                <div className="rounded-2xl bg-gradient-to-br from-white to-amber-50/30 p-5 border border-slate-100 shadow-sm">
+                  <h4 className="flex items-center gap-2 mb-4 font-semibold text-slate-800">
+                    <AlertTriangle className="h-4 w-4 text-amber-500" />
+                    Troubleshooting
+                  </h4>
+                  <ul className="space-y-3">
+                    <li className="flex items-start gap-2.5 text-sm text-slate-600">
+                      <span className="block h-1.5 w-1.5 rounded-full bg-amber-400 mt-1.5 shrink-0" />
+                      <span>Ensure you are using HTTPS (Secure Context)</span>
+                    </li>
+                    <li className="flex items-start gap-2.5 text-sm text-slate-600">
+                      <span className="block h-1.5 w-1.5 rounded-full bg-amber-400 mt-1.5 shrink-0" />
+                      <span>Clean sensor surface or try alternative finger</span>
+                    </li>
+                    {appContext.isApplication && (
+                      <li className="flex items-start gap-2.5 text-sm text-slate-600">
+                        <span className="block h-1.5 w-1.5 rounded-full bg-amber-400 mt-1.5 shrink-0" />
+                        <span>Check app permissions in OS settings</span>
+                      </li>
+                    )}
+                  </ul>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
     </motion.div>
   )
 }

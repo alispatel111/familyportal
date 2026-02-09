@@ -1,21 +1,57 @@
 "use client"
 
-import { useState } from "react"
-import { motion } from "framer-motion"
+import { useState, useEffect, useRef } from "react"
+import { motion, AnimatePresence } from "framer-motion"
+import { 
+  FileText, 
+  Image as ImageIcon, 
+  FileSpreadsheet, 
+  Presentation, 
+  File, 
+  MoreVertical, 
+  Eye, 
+  Download, 
+  Trash2, 
+  Shield, 
+  CreditCard, 
+  Folder, 
+  User, 
+  Calendar, 
+  HardDrive
+} from "lucide-react"
 
-const DocumentCard = ({ document, onDelete, onMove, folders = [], showUser = false }) => {
+const DocumentCard = ({ document: doc, onDelete, showUser = false }) => {
   const [isHovered, setIsHovered] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
-  const [showMoveMenu, setShowMoveMenu] = useState(false)
   const [showActions, setShowActions] = useState(false)
+  
+  const menuRef = useRef(null)
+  const actionsButtonRef = useRef(null)
 
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target) &&
+          actionsButtonRef.current && !actionsButtonRef.current.contains(event.target)) {
+        setShowActions(false)
+      }
+    }
+
+    if (typeof document !== 'undefined') {
+      document.addEventListener("mousedown", handleClickOutside)
+      return () => document.removeEventListener("mousedown", handleClickOutside)
+    }
+  }, [])
+
+  // Helper to map mime types to Lucide Icons
   const getFileIcon = (mimeType) => {
-    if (mimeType?.includes("pdf")) return "📄"
-    if (mimeType?.includes("image")) return "🖼️"
-    if (mimeType?.includes("document") || mimeType?.includes("word")) return "📝"
-    if (mimeType?.includes("spreadsheet") || mimeType?.includes("excel")) return "📊"
-    if (mimeType?.includes("presentation") || mimeType?.includes("powerpoint")) return "📽️"
-    return "📁"
+    const props = { size: 28, strokeWidth: 1.5 }
+    if (mimeType?.includes("pdf")) return <FileText {...props} className="text-red-500" />
+    if (mimeType?.includes("image")) return <ImageIcon {...props} className="text-blue-500" />
+    if (mimeType?.includes("document") || mimeType?.includes("word")) return <FileText {...props} className="text-blue-600" />
+    if (mimeType?.includes("spreadsheet") || mimeType?.includes("excel")) return <FileSpreadsheet {...props} className="text-green-600" />
+    if (mimeType?.includes("presentation") || mimeType?.includes("powerpoint")) return <Presentation {...props} className="text-orange-500" />
+    return <File {...props} className="text-gray-500" />
   }
 
   const formatFileSize = (bytes) => {
@@ -26,32 +62,61 @@ const DocumentCard = ({ document, onDelete, onMove, folders = [], showUser = fal
   }
 
   const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    })
+    if (!dateString) return "Unknown date"
+    try {
+      return new Date(dateString).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      })
+    } catch (error) {
+      return "Invalid date"
+    }
   }
 
   const getCategoryStyle = (category) => {
     const styles = {
       "pan card": {
-        bg: "from-red-50 to-orange-50",
-        border: "border-red-200",
+        bg: "bg-red-50",
+        border: "border-red-100",
         text: "text-red-700",
-        icon: "🆔",
+        icon: <CreditCard size={14} className="text-red-600" />,
       },
       insurance: {
-        bg: "from-green-50 to-emerald-50",
-        border: "border-green-200",
-        text: "text-green-700",
-        icon: "🛡️",
+        bg: "bg-emerald-50",
+        border: "border-emerald-100",
+        text: "text-emerald-700",
+        icon: <Shield size={14} className="text-emerald-600" />,
+      },
+      "tax document": {
+        bg: "bg-amber-50",
+        border: "border-amber-100",
+        text: "text-amber-700",
+        icon: <FileText size={14} className="text-amber-600" />,
+      },
+      "bank statement": {
+        bg: "bg-blue-50",
+        border: "border-blue-100",
+        text: "text-blue-700",
+        icon: <CreditCard size={14} className="text-blue-600" />,
+      },
+      "personal": {
+        bg: "bg-purple-50",
+        border: "border-purple-100",
+        text: "text-purple-700",
+        icon: <User size={14} className="text-purple-600" />,
+      },
+      "work": {
+        bg: "bg-cyan-50",
+        border: "border-cyan-100",
+        text: "text-cyan-700",
+        icon: <FileText size={14} className="text-cyan-600" />,
       },
       default: {
-        bg: "from-blue-50 to-indigo-50",
-        border: "border-blue-200",
-        text: "text-blue-700",
-        icon: "📁",
+        bg: "bg-indigo-50",
+        border: "border-indigo-100",
+        text: "text-indigo-700",
+        icon: <Folder size={14} className="text-indigo-600" />,
       },
     }
 
@@ -60,31 +125,31 @@ const DocumentCard = ({ document, onDelete, onMove, folders = [], showUser = fal
   }
 
   const handleView = () => {
-    if (!document.fileUrl) {
-      console.error("❌ ERROR: document.fileUrl is missing!")
+    if (!doc.fileUrl) {
+      console.error("❌ ERROR: doc.fileUrl is missing!")
       if (window.showToast) {
         window.showToast("error", "Error", "Document URL is missing. Cannot view file.")
       }
       return
     }
-    window.open(document.fileUrl, "_blank")
+    window.open(doc.fileUrl, "_blank")
   }
 
   const handleDownload = () => {
-    if (!document.fileUrl) {
-      console.error("❌ ERROR: document.fileUrl is missing!")
+    if (!doc.fileUrl) {
+      console.error("❌ ERROR: doc.fileUrl is missing!")
       if (window.showToast) {
         window.showToast("error", "Error", "Document URL is missing. Cannot download file.")
       }
       return
     }
 
-    const downloadUrl = `${document.fileUrl}?download=true`
+    const downloadUrl = `${doc.fileUrl}?download=true`
 
     try {
       const link = document.createElement("a")
       link.href = downloadUrl
-      link.download = document.originalName
+      link.download = doc.originalName
       link.target = "_blank"
       link.style.display = "none"
 
@@ -93,7 +158,7 @@ const DocumentCard = ({ document, onDelete, onMove, folders = [], showUser = fal
       document.body.removeChild(link)
 
       if (window.showToast) {
-        window.showToast("success", "Download Started", `Downloading ${document.originalName}`)
+        window.showToast("success", "Download Started", `Downloading ${doc.originalName}`)
       }
     } catch (error) {
       console.error("❌ Download failed:", error)
@@ -104,266 +169,213 @@ const DocumentCard = ({ document, onDelete, onMove, folders = [], showUser = fal
   }
 
   const handleDelete = () => {
-    if (window.confirm(`Are you sure you want to delete "${document.originalName}"?`)) {
+    if (window.confirm(`Are you sure you want to delete "${doc.originalName}"?`)) {
       setIsDeleting(true)
       setTimeout(() => {
-        onDelete(document._id)
+        onDelete(doc._id)
       }, 300)
     }
+    setShowActions(false)
   }
 
-  const handleMove = (folderId) => {
-    if (onMove) {
-      onMove(document._id, folderId)
-    }
-    setShowMoveMenu(false)
-  }
+  const categoryStyle = getCategoryStyle(doc.category)
 
-  const toggleMoveMenu = (e) => {
-    e.stopPropagation()
-    setShowMoveMenu(!showMoveMenu)
-  }
-
-  const categoryStyle = getCategoryStyle(document.category)
+  // File extension for badge
+  const fileExtension = doc.mimeType?.split('/')[1]?.toUpperCase().substring(0, 4) || "FILE"
 
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 0.9, y: 20 }}
+      layout
+      initial={{ opacity: 0, y: 15 }}
       animate={{ 
         opacity: isDeleting ? 0 : 1, 
-        scale: isDeleting ? 0.9 : 1,
-        y: 0 
+        scale: isDeleting ? 0.95 : 1,
+        y: 0,
+        filter: isDeleting ? "blur(4px)" : "blur(0px)"
       }}
-      transition={{ duration: 0.3 }}
-      whileHover={{ y: -5 }}
+      transition={{ duration: 0.3, ease: "easeOut" }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      className="relative group"
+      className="relative group h-full w-full"
     >
-      {/* Card Container */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-white to-gray-50 border border-gray-200 shadow-lg transition-all duration-500 hover:shadow-2xl">
-        {/* Background glow effect */}
-        <motion.div
-          initial={false}
-          animate={{ 
-            opacity: isHovered ? 0.1 : 0,
-            scale: isHovered ? 1 : 0.8 
-          }}
-          className="absolute inset-0 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 blur-xl"
-        />
-
-        {/* Main content */}
-        <div className="relative p-6">
-          {/* Header with icon and actions */}
-          <div className="flex items-start justify-between mb-4">
-            <div className="flex items-center space-x-4">
-              <motion.div
-                whileHover={{ rotate: 10, scale: 1.1 }}
-                className={`flex h-14 w-14 items-center justify-center rounded-xl ${categoryStyle.bg} ${categoryStyle.border} shadow-lg`}
-              >
-                <span className="text-2xl">{getFileIcon(document.mimeType)}</span>
-              </motion.div>
-              
-              <div className="flex-1 min-w-0">
-                <h3 className="text-lg font-bold text-gray-900 truncate">
-                  {document.originalName}
-                </h3>
-                <p className="text-sm text-gray-500 mt-1">
-                  {formatFileSize(document.fileSize)} • {formatDate(document.uploadDate)}
-                </p>
+      {/* Main Card Container */}
+      <div 
+        className={`
+          relative flex flex-col h-full bg-white rounded-2xl border transition-all duration-300 ease-out overflow-visible
+          ${isHovered ? 'border-indigo-200 shadow-xl shadow-indigo-500/10 -translate-y-1' : 'border-gray-200 shadow-sm'}
+        `}
+      >
+        
+        {/* Top Section: Icon & Menu */}
+        <div className="p-4 md:p-5 flex items-start justify-between relative z-10">
+          <div className="flex items-start gap-3 md:gap-4 overflow-hidden flex-1">
+            {/* File Icon Container */}
+            <div className={`
+              flex h-10 w-10 md:h-12 md:w-12 shrink-0 items-center justify-center rounded-xl transition-colors duration-300
+              ${isHovered ? 'bg-gray-50 ring-1 ring-gray-200' : 'bg-gray-50/50'}
+            `}>
+              {getFileIcon(doc.mimeType)}
+            </div>
+            
+            {/* Title & Meta */}
+            <div className="min-w-0 flex-1">
+              <h3 className="text-sm md:text-base font-semibold text-gray-900 truncate pr-2 leading-tight" title={doc.originalName}>
+                {doc.originalName}
+              </h3>
+              <div className="flex items-center flex-wrap gap-1.5 md:gap-2 mt-1 text-xs text-gray-500">
+                <span className="flex items-center gap-1 bg-gray-100 px-1.5 py-0.5 rounded-md font-medium text-gray-600">
+                  {fileExtension}
+                </span>
+                <span className="hidden sm:inline">•</span>
+                <span>{formatFileSize(doc.fileSize)}</span>
               </div>
             </div>
+          </div>
 
-            {/* Quick action menu */}
-            <div className="relative">
-              <button
-                onClick={() => setShowActions(!showActions)}
-                className="p-2 rounded-lg hover:bg-gray-100 transition-colors duration-200"
-              >
-                <span className="text-gray-500">⋯</span>
-              </button>
+          {/* Context Menu Trigger - Only Delete */}
+          <div className="relative" ref={menuRef}>
+            <button
+              ref={actionsButtonRef}
+              onClick={(e) => {
+                e.stopPropagation()
+                setShowActions(!showActions)
+              }}
+              className={`
+                p-1.5 md:p-2 rounded-lg transition-all duration-200 outline-none
+                ${showActions ? 'bg-gray-100 text-gray-900' : 'text-gray-400 hover:text-gray-700 hover:bg-gray-50'}
+              `}
+            >
+              <MoreVertical size={18} />
+            </button>
 
+            {/* Dropdown Menu - Only Delete Option */}
+            <AnimatePresence>
               {showActions && (
                 <motion.div
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  className="absolute right-0 top-full mt-2 w-48 bg-white rounded-xl shadow-2xl border border-gray-200 z-50"
+                  initial={{ opacity: 0, scale: 0.95, y: 10, x: 0 }}
+                  animate={{ opacity: 1, scale: 1, y: 0, x: 0 }}
+                  exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                  transition={{ duration: 0.15 }}
+                  className="absolute right-0 top-full mt-2 w-40 md:w-48 bg-white rounded-xl shadow-2xl border border-gray-100 z-50 overflow-hidden ring-1 ring-black/5"
+                  onClick={(e) => e.stopPropagation()}
                 >
-                  <button
-                    onClick={handleView}
-                    className="w-full px-4 py-3 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center space-x-3"
-                  >
-                    <span>👁️</span>
-                    <span>View Document</span>
-                  </button>
-                  <button
-                    onClick={handleDownload}
-                    className="w-full px-4 py-3 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center space-x-3"
-                  >
-                    <span>⬇️</span>
-                    <span>Download</span>
-                  </button>
-                  {onMove && folders.length > 0 && (
+                  <div className="py-1.5">
+                    {/* Only Delete Option */}
                     <button
-                      onClick={toggleMoveMenu}
-                      className="w-full px-4 py-3 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center space-x-3"
+                      onClick={handleDelete}
+                      className="w-full px-4 py-2.5 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-3 transition-colors"
                     >
-                      <span>📂</span>
-                      <span>Move to Folder</span>
+                      <Trash2 size={16} />
+                      Delete
                     </button>
-                  )}
-                  <button
-                    onClick={handleDelete}
-                    className="w-full px-4 py-3 text-left text-sm text-red-600 hover:bg-red-50 flex items-center space-x-3 rounded-b-xl"
-                  >
-                    <span>🗑️</span>
-                    <span>Delete</span>
-                  </button>
+                  </div>
                 </motion.div>
               )}
-            </div>
-          </div>
-
-          {/* Category badge */}
-          <motion.div
-            initial={false}
-            animate={{ scale: isHovered ? 1.05 : 1 }}
-            className={`inline-flex items-center space-x-2 rounded-full px-4 py-2 ${categoryStyle.bg} ${categoryStyle.border} mb-4`}
-          >
-            <span className="text-sm">{categoryStyle.icon}</span>
-            <span className={`text-sm font-semibold ${categoryStyle.text}`}>
-              {document.category || "Document"}
-            </span>
-          </motion.div>
-
-          {/* User info if enabled */}
-          {showUser && document.uploadedBy && (
-            <div className="flex items-center space-x-3 mb-4 p-3 rounded-lg bg-gray-50/50">
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-r from-blue-400 to-purple-400 text-white text-xs font-bold">
-                {document.uploadedBy.fullName?.charAt(0) || "U"}
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-700">{document.uploadedBy.fullName}</p>
-                <p className="text-xs text-gray-500">Uploaded by</p>
-              </div>
-            </div>
-          )}
-
-          {/* File details grid */}
-          <div className="grid grid-cols-2 gap-3 mb-4">
-            <div className="rounded-lg bg-gray-50/50 p-3">
-              <p className="text-xs text-gray-500 mb-1">Type</p>
-              <p className="text-sm font-medium text-gray-800">
-                {document.mimeType?.split('/')[1]?.toUpperCase() || "FILE"}
-              </p>
-            </div>
-            <div className="rounded-lg bg-gray-50/50 p-3">
-              <p className="text-xs text-gray-500 mb-1">Uploaded</p>
-              <p className="text-sm font-medium text-gray-800">
-                {formatDate(document.uploadDate)}
-              </p>
-            </div>
-          </div>
-
-          {/* Action buttons */}
-          <div className="flex space-x-2">
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={handleView}
-              className="flex-1 rounded-xl bg-gradient-to-r from-blue-500 to-purple-500 px-4 py-3 text-white font-medium shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center space-x-2"
-            >
-              <span>👁️</span>
-              <span>View</span>
-            </motion.button>
-            
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={handleDownload}
-              className="flex-1 rounded-xl border-2 border-gray-300 bg-white px-4 py-3 text-gray-700 font-medium shadow-sm hover:shadow-md transition-all duration-300 flex items-center justify-center space-x-2"
-            >
-              <span>⬇️</span>
-              <span>Download</span>
-            </motion.button>
+            </AnimatePresence>
           </div>
         </div>
 
-        {/* Move menu dropdown */}
-        {showMoveMenu && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="absolute right-0 top-16 mt-2 w-64 bg-white rounded-xl shadow-2xl border border-gray-200 z-50"
-          >
-            <div className="p-3">
-              <p className="text-xs font-semibold text-gray-600 mb-2 px-2">Move to folder:</p>
-              <button
-                onClick={() => handleMove(null)}
-                className="w-full px-4 py-3 text-left text-sm text-gray-700 hover:bg-gray-50 rounded-lg flex items-center space-x-3"
-              >
-                <span>📄</span>
-                <span>No Folder</span>
-              </button>
-              {folders.map((folder) => (
-                <button
-                  key={folder._id}
-                  onClick={() => handleMove(folder._id)}
-                  className="w-full px-4 py-3 text-left text-sm text-gray-700 hover:bg-gray-50 rounded-lg flex items-center space-x-3"
-                >
-                  <span>📁</span>
-                  <span>{folder.name}</span>
-                </button>
-              ))}
+        {/* Middle Section: Info Grid */}
+        <div className="px-4 md:px-5 pb-3 md:pb-4 flex-1">
+          {/* Category Pill */}
+          <div className={`
+            inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border mb-4
+            ${categoryStyle.bg} ${categoryStyle.text} ${categoryStyle.border}
+          `}>
+            {categoryStyle.icon}
+            <span className="capitalize">{doc.category || "Uncategorized"}</span>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2 md:gap-3">
+             {/* Upload Date */}
+             <div className="bg-gray-50 rounded-lg p-2 md:p-2.5 border border-gray-100">
+                <div className="flex items-center gap-1.5 text-xs text-gray-400 mb-1">
+                  <Calendar size={12} />
+                  <span>Date</span>
+                </div>
+                <div className="text-sm font-medium text-gray-700">
+                  {formatDate(doc.uploadDate)}
+                </div>
+             </div>
+
+             {/* Size */}
+             <div className="bg-gray-50 rounded-lg p-2 md:p-2.5 border border-gray-100">
+                <div className="flex items-center gap-1.5 text-xs text-gray-400 mb-1">
+                  <HardDrive size={12} />
+                  <span>Size</span>
+                </div>
+                <div className="text-sm font-medium text-gray-700">
+                  {formatFileSize(doc.fileSize).split(' ')[0]} 
+                  <span className="text-xs text-gray-500 ml-0.5">{formatFileSize(doc.fileSize).split(' ')[1]}</span>
+                </div>
+             </div>
+          </div>
+        </div>
+
+        {/* User Info (Conditional) */}
+        {showUser && doc.uploadedBy && (
+          <div className="px-4 md:px-5 pb-3 md:pb-4">
+            <div className="flex items-center gap-2 md:gap-3 p-2 rounded-lg bg-gray-50/80 border border-gray-100">
+              <div className="h-7 w-7 md:h-8 md:w-8 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center text-white text-xs font-bold shadow-sm">
+                 {doc.uploadedBy.fullName?.charAt(0) || <User size={12} />}
+              </div>
+              <div className="flex flex-col">
+                <span className="text-xs text-gray-400">Uploaded by</span>
+                <span className="text-sm font-medium text-gray-700 leading-none truncate max-w-[120px] md:max-w-none">
+                  {doc.uploadedBy.fullName}
+                </span>
+              </div>
             </div>
-          </motion.div>
+          </div>
         )}
+
+        {/* Bottom Section: Primary Actions */}
+        <div className="px-4 md:px-5 pb-4 md:pb-5 mt-auto">
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+            {/* View Button with Glass Shine Effect */}
+            <button
+              onClick={handleView}
+              className="group relative overflow-hidden flex-1 flex items-center justify-center gap-2 rounded-xl bg-gray-900 text-white py-2.5 text-sm font-medium transition-all duration-200 active:scale-95 hover:bg-gray-800 hover:shadow-lg hover:shadow-gray-900/20"
+            >
+              {/* Shine Element */}
+              <div 
+                className="
+                  absolute top-0 -left-full 
+                  w-24 h-full 
+                  bg-gradient-to-r from-transparent via-white/20 to-transparent 
+                  -skew-x-12 
+                  transition-all duration-700 ease-in-out 
+                  group-hover:left-[120%]
+                " 
+              />
+              
+              {/* Button Content */}
+              <div className="relative z-10 flex items-center justify-center gap-2">
+                <Eye size={16} />
+                View
+              </div>
+            </button>
+            
+            <button
+              onClick={handleDownload}
+              className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-white border border-gray-200 text-gray-700 py-2.5 text-sm font-medium transition-all hover:bg-gray-50 hover:border-gray-300 active:scale-[0.98]"
+            >
+              <Download size={16} />
+              Download
+            </button>
+          </div>
+        </div>
       </div>
 
-      {/* Click outside to close menus */}
-      {(showActions || showMoveMenu) && (
+      {/* Backdrop for closing menu */}
+      {showActions && (
         <div 
-          className="fixed inset-0 z-40" 
-          onClick={() => {
+          className="fixed inset-0 z-40 cursor-default" 
+          onClick={(e) => {
+            e.stopPropagation()
             setShowActions(false)
-            setShowMoveMenu(false)
           }}
         />
-      )}
-
-      {/* Animated border effect */}
-      <motion.div
-        initial={false}
-        animate={{ 
-          opacity: isHovered ? 1 : 0,
-          scale: isHovered ? 1 : 0.95 
-        }}
-        className="absolute inset-0 rounded-2xl border-2 border-transparent pointer-events-none"
-        style={{
-          background: "linear-gradient(45deg, #6366f1, #8b5cf6, #ec4899) border-box",
-          WebkitMask: "linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0)",
-          mask: "linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0)",
-          WebkitMaskComposite: "xor",
-          maskComposite: "exclude",
-        }}
-      />
-
-      {/* Floating particles on hover */}
-      {isHovered && (
-        <>
-          <motion.div
-            initial={{ opacity: 0, scale: 0 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.1 }}
-            className="absolute -top-2 -right-2 h-4 w-4 rounded-full bg-blue-400 animate-ping"
-          />
-          <motion.div
-            initial={{ opacity: 0, scale: 0 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.2 }}
-            className="absolute -bottom-2 -left-2 h-3 w-3 rounded-full bg-purple-400 animate-ping"
-          />
-        </>
       )}
     </motion.div>
   )

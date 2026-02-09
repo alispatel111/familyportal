@@ -1,8 +1,20 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { 
+  X, 
+  Folder, 
+  FolderPlus, 
+  FolderPen, 
+  Palette, 
+  FileText, 
+  Check, 
+  Loader2, 
+  Save 
+} from "lucide-react"
 
 const FolderModal = ({ isOpen, onClose, onSave, folder = null }) => {
+  // --- STATE & LOGIC (UNCHANGED) ---
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -82,65 +94,76 @@ const FolderModal = ({ isOpen, onClose, onSave, folder = null }) => {
     }, 300)
   }
 
+  // --- RENDER ---
+
   if (!isOpen && !isAnimating) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* 背景遮罩 */}
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
+      {/* Backdrop with Blur Effect */}
       <div 
-        className={`absolute inset-0 bg-black transition-opacity duration-500 ${
-          isAnimating ? 'opacity-50' : 'opacity-0'
+        className={`absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity duration-300 ${
+          isAnimating ? 'opacity-100' : 'opacity-0'
         }`}
         onClick={handleClose}
+        aria-hidden="true"
       />
 
-      {/* 模态框 */}
+      {/* Modal Content */}
       <div 
-        className={`relative w-full max-w-md overflow-hidden rounded-3xl bg-gradient-to-br from-white to-gray-50 shadow-2xl transition-all duration-500 ${
+        className={`relative w-full max-w-lg overflow-hidden rounded-3xl bg-white shadow-2xl ring-1 ring-gray-900/5 transition-all duration-500 ease-out transform ${
           isAnimating 
             ? 'scale-100 opacity-100 translate-y-0' 
-            : 'scale-95 opacity-0 translate-y-4'
+            : 'scale-95 opacity-0 translate-y-8'
         }`}
+        role="dialog"
+        aria-modal="true"
       >
-        {/* 装饰性顶部条 */}
+        {/* Decorative Top Accent Line */}
         <div 
-          className="h-2 transition-all duration-700"
-          style={{ background: `linear-gradient(to right, ${formData.color}60, ${formData.color})` }}
+          className="absolute top-0 left-0 right-0 h-1.5 transition-colors duration-500"
+          style={{ backgroundColor: formData.color }}
         />
 
-        <div className="p-6 sm:p-8">
-          {/* 头部 */}
-          <div className="mb-6 flex items-center justify-between">
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900">
-                {folder ? "Edit Folder" : "Create New Folder"}
-              </h2>
-              <p className="mt-1 text-sm text-gray-600">
-                {folder ? "Update your folder details" : "Organize your documents in a new folder"}
-              </p>
+        <div className="flex flex-col h-full max-h-[90vh] overflow-y-auto">
+          {/* Header */}
+          <div className="px-6 py-6 border-b border-gray-100 bg-gray-50/50 flex items-start justify-between">
+            <div className="flex gap-4">
+              <div 
+                className="flex h-12 w-12 items-center justify-center rounded-2xl shadow-sm ring-1 ring-black/5 transition-colors duration-300"
+                style={{ backgroundColor: `${formData.color}15`, color: formData.color }}
+              >
+                {folder ? <FolderPen size={24} /> : <FolderPlus size={24} />}
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-gray-900 tracking-tight">
+                  {folder ? "Edit Folder" : "New Folder"}
+                </h2>
+                <p className="text-sm text-gray-500 mt-0.5">
+                  {folder ? "Update your folder details below." : "Create a space to organize your files."}
+                </p>
+              </div>
             </div>
             
             <button
               onClick={handleClose}
-              className="group flex h-10 w-10 items-center justify-center rounded-xl bg-gray-100 text-gray-500 transition-all hover:bg-gray-200 hover:text-gray-700 active:scale-95"
+              className="rounded-full p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all focus:outline-none focus:ring-2 focus:ring-gray-200"
+              aria-label="Close modal"
             >
-              <svg className="h-5 w-5 transition-transform group-hover:rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
+              <X size={20} />
             </button>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* 文件夹名称 */}
-            <div className="group">
-              <label htmlFor="name" className="mb-2 block text-sm font-medium text-gray-700">
-                Folder Name <span className="text-red-500">*</span>
+          <form onSubmit={handleSubmit} className="p-6 space-y-8">
+            
+            {/* Folder Name Input */}
+            <div className="space-y-2">
+              <label htmlFor="name" className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                Folder Name <span className="text-red-500 text-xs">*</span>
               </label>
-              <div className="relative">
-                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                  <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
-                  </svg>
+              <div className="relative group">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-indigo-500 transition-colors">
+                  <Folder size={18} />
                 </div>
                 <input
                   type="text"
@@ -148,100 +171,95 @@ const FolderModal = ({ isOpen, onClose, onSave, folder = null }) => {
                   name="name"
                   value={formData.name}
                   onChange={handleChange}
-                  className="w-full rounded-xl border border-gray-300 bg-white py-3 pl-10 pr-4 text-gray-900 placeholder-gray-500 transition-all focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 hover:border-gray-400"
-                  placeholder="Enter folder name"
+                  className="w-full pl-11 pr-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 text-sm placeholder:text-gray-400 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all duration-200 outline-none hover:border-gray-300"
+                  placeholder="e.g. Marketing Assets"
                   required
                   autoFocus
                 />
               </div>
             </div>
 
-            {/* 描述 */}
-            <div className="group">
-              <label htmlFor="description" className="mb-2 block text-sm font-medium text-gray-700">
-                Description <span className="text-gray-400">(Optional)</span>
-              </label>
-              <div className="relative">
+            {/* Description Input */}
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <label htmlFor="description" className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                   Description
+                </label>
+                <span className={`text-xs transition-colors ${formData.description.length > 180 ? 'text-orange-500' : 'text-gray-400'}`}>
+                  {formData.description.length}/200
+                </span>
+              </div>
+              <div className="relative group">
+                <div className="absolute top-3.5 left-4 pointer-events-none text-gray-400 group-focus-within:text-indigo-500 transition-colors">
+                  <FileText size={18} />
+                </div>
                 <textarea
                   id="description"
                   name="description"
                   value={formData.description}
                   onChange={handleChange}
+                  maxLength={200}
                   rows={3}
-                  className="w-full resize-none rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 placeholder-gray-500 transition-all focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 hover:border-gray-400"
-                  placeholder="Describe what this folder contains..."
+                  className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 text-sm placeholder:text-gray-400 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all duration-200 outline-none resize-none hover:border-gray-300"
+                  placeholder="What's inside this folder?"
                 />
-                <div className="pointer-events-none absolute bottom-3 right-3 text-xs text-gray-400">
-                  {formData.description.length}/200
-                </div>
               </div>
             </div>
 
-            {/* 颜色选择 */}
-            <div className="group">
-              <label className="mb-3 block text-sm font-medium text-gray-700">
-                Folder Color
+            {/* Color Picker */}
+            <div className="space-y-3">
+              <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                <Palette size={16} /> Color Tag
               </label>
-              <div className="grid grid-cols-5 gap-3">
+              <div className="grid grid-cols-5 sm:grid-cols-10 gap-3">
                 {colors.map((color) => (
                   <button
                     key={color.value}
                     type="button"
                     onClick={() => setFormData((prev) => ({ ...prev, color: color.value }))}
-                    className={`group/color relative h-14 rounded-xl border-2 transition-all duration-300 ${
-                      formData.color === color.value
-                        ? 'scale-105 border-gray-900 shadow-lg'
-                        : 'border-gray-200 hover:border-gray-300 hover:shadow-md'
-                    }`}
+                    className="group relative flex items-center justify-center h-9 w-full rounded-full transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-300"
                     style={{ backgroundColor: color.value }}
                     title={color.name}
                   >
-                    {/* 选中指示器 */}
-                    {formData.color === color.value && (
-                      <div className="absolute inset-0 flex items-center justify-center rounded-xl bg-black/10">
-                        <svg className="h-6 w-6 text-white drop-shadow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                        </svg>
-                      </div>
-                    )}
+                    <span className={`absolute inset-0 rounded-full bg-white opacity-0 transition-opacity duration-200 group-hover:opacity-20`} />
                     
-                    {/* 悬停效果 */}
-                    <div className="absolute inset-0 rounded-xl bg-white opacity-0 transition-opacity group-hover/color:opacity-20" />
+                    {formData.color === color.value && (
+                      <span className="animate-in zoom-in duration-200 text-white drop-shadow-md">
+                        <Check size={14} strokeWidth={3} />
+                      </span>
+                    )}
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* 预览 */}
-            <div className="rounded-xl border border-gray-200 bg-gradient-to-r from-gray-50 to-white p-4">
-              <div className="flex items-center gap-3">
+            {/* Live Preview Card */}
+            <div className="mt-4 pt-6 border-t border-gray-100">
+              <div className="text-xs font-medium text-gray-400 mb-3 uppercase tracking-wider">Preview</div>
+              <div className="flex items-center gap-4 p-4 rounded-2xl border border-gray-200 bg-white shadow-sm transition-all duration-300 hover:shadow-md hover:border-gray-300">
                 <div
-                  className="flex h-12 w-12 items-center justify-center rounded-xl text-white shadow-md"
+                  className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl text-white shadow-inner transition-colors duration-500"
                   style={{ backgroundColor: formData.color }}
                 >
-                  <svg className="h-6 w-6" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
-                  </svg>
+                  <Folder size={28} fill="currentColor" fillOpacity={0.2} />
                 </div>
-                <div className="flex-1">
-                  <div className="font-medium text-gray-900">
-                    {formData.name || "Folder Preview"}
-                  </div>
-                  {formData.description && (
-                    <div className="text-sm text-gray-600 line-clamp-1">
-                      {formData.description}
-                    </div>
-                  )}
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-semibold text-gray-900 truncate text-base">
+                    {formData.name || <span className="text-gray-400 italic">Untitled Folder</span>}
+                  </h3>
+                  <p className="text-sm text-gray-500 truncate mt-0.5">
+                    {formData.description || "No description provided"}
+                  </p>
                 </div>
               </div>
             </div>
 
-            {/* 操作按钮 */}
-            <div className="flex flex-col gap-3 pt-2 sm:flex-row">
+            {/* Footer Buttons */}
+            <div className="flex flex-col-reverse sm:flex-row gap-3 pt-2">
               <button
                 type="button"
                 onClick={handleClose}
-                className="flex-1 rounded-xl border-2 border-gray-300 bg-white px-6 py-3 font-medium text-gray-700 transition-all hover:border-gray-400 hover:bg-gray-50 active:scale-[0.98]"
+                className="flex-1 px-6 py-3.5 rounded-xl text-sm font-medium text-gray-700 bg-white border border-gray-200 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-100 transition-all duration-200 active:scale-[0.98]"
               >
                 Cancel
               </button>
@@ -249,30 +267,29 @@ const FolderModal = ({ isOpen, onClose, onSave, folder = null }) => {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="group relative flex-1 overflow-hidden rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 px-6 py-3 font-medium text-white shadow-lg transition-all hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] disabled:opacity-70"
+                className="flex-1 group relative overflow-hidden rounded-xl px-6 py-3.5 text-sm font-medium text-white shadow-lg shadow-indigo-500/20 focus:outline-none focus:ring-4 focus:ring-indigo-500/20 active:scale-[0.98] transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed"
+                style={{ 
+                  background: `linear-gradient(135deg, ${formData.color}, ${formData.color}dd)` 
+                }}
               >
-                <div className="absolute inset-0 bg-gradient-to-r from-indigo-700 to-purple-700 opacity-0 transition-opacity group-hover:opacity-100"></div>
+                <div className="absolute inset-0 bg-white/0 group-hover:bg-white/10 transition-colors duration-200" />
+                
                 <div className="relative flex items-center justify-center gap-2">
                   {isLoading ? (
                     <>
-                      <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
-                      Saving...
+                      <Loader2 size={18} className="animate-spin" />
+                      <span>Saving...</span>
                     </>
                   ) : (
                     <>
-                      <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        {folder ? (
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                        ) : (
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                        )}
-                      </svg>
-                      {folder ? "Update Folder" : "Create Folder"}
+                      <Save size={18} />
+                      <span>{folder ? "Save Changes" : "Create Folder"}</span>
                     </>
                   )}
                 </div>
               </button>
             </div>
+
           </form>
         </div>
       </div>

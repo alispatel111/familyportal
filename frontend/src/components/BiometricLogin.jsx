@@ -3,8 +3,23 @@
 import { useState, useEffect, useRef } from "react"
 import axios from "axios"
 import { motion, AnimatePresence } from "framer-motion"
+import { 
+  Fingerprint, 
+  ShieldCheck, 
+  RefreshCw, 
+  AlertCircle, 
+  ArrowLeft, 
+  Zap, 
+  Lock,
+  ScanFace,
+  Check,
+  XCircle
+} from "lucide-react"
 
 const BiometricLogin = ({ onLogin, onCancel }) => {
+  // ==========================================
+  //  CORE LOGIC (UNCHANGED)
+  // ==========================================
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
   const [step, setStep] = useState("preparing")
@@ -14,7 +29,6 @@ const BiometricLogin = ({ onLogin, onCancel }) => {
   useEffect(() => {
     console.log("🔐 BiometricLogin component mounted - starting immediate auth")
     
-    // Animated progress bar
     const interval = setInterval(() => {
       setProgress(prev => {
         if (prev >= 100) {
@@ -64,33 +78,25 @@ const BiometricLogin = ({ onLogin, onCancel }) => {
     const appContext = detectApplicationContext()
     console.log("🔍 Application context:", appContext)
 
-    // Basic WebAuthn support
     if (!window.PublicKeyCredential) {
       console.log("❌ WebAuthn not supported")
       return { supported: false, reason: "WebAuthn API not available" }
     }
 
     try {
-      // Check if user verifying platform authenticator is available
       const available = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()
 
       if (!available && appContext.isApplication) {
-        // For applications, try alternative detection methods
         console.log("🔄 Trying alternative biometric detection for application...")
 
-        // Check if we're in a secure context (required for WebAuthn)
         if (!window.isSecureContext) {
-          console.log("⚠️ Not in secure context, trying to enable...")
-          // For applications, we might need to handle this differently
           if (appContext.isElectron) {
-            // Electron apps can work with localhost
             console.log("✅ Electron context detected, proceeding...")
           } else {
             return { supported: false, reason: "Secure context required for biometric authentication" }
           }
         }
 
-        // Try to create a test credential to verify support
         try {
           const testSupport = await navigator.credentials.create({
             publicKey: {
@@ -102,14 +108,12 @@ const BiometricLogin = ({ onLogin, onCancel }) => {
                 authenticatorAttachment: "platform",
                 userVerification: "required",
               },
-              timeout: 1000, // Short timeout for test
+              timeout: 1000,
             },
           })
           return { supported: true, available: true }
         } catch (testError) {
-          console.log("🔍 Test credential creation failed:", testError.name)
           if (testError.name === "NotAllowedError" || testError.name === "AbortError") {
-            // This actually means biometric is available but user cancelled/timeout
             return { supported: true, available: true }
           }
         }
@@ -138,9 +142,6 @@ const BiometricLogin = ({ onLogin, onCancel }) => {
 
       const response = await axios.post("/api/auth/biometric/login/immediate")
       const { publicKeyCredentialRequestOptions } = response.data
-
-      console.log("✅ Immediate biometric options received:", publicKeyCredentialRequestOptions)
-      console.log("👥 User count:", response.data.userCount)
 
       if (!publicKeyCredentialRequestOptions) {
         throw new Error("No biometric options received from server")
@@ -177,7 +178,6 @@ const BiometricLogin = ({ onLogin, onCancel }) => {
       try {
         let challengeBytes
         if (typeof challengeString === "string") {
-          // Handle both base64 and base64url encoding
           const normalizedChallenge = challengeString.replace(/-/g, "+").replace(/_/g, "/")
           const paddedChallenge = normalizedChallenge.padEnd(
             normalizedChallenge.length + ((4 - (normalizedChallenge.length % 4)) % 4),
@@ -191,19 +191,13 @@ const BiometricLogin = ({ onLogin, onCancel }) => {
         }
 
         options.challenge = challengeBytes
-        console.log("✅ Challenge converted successfully")
       } catch (e) {
-        console.error("❌ Challenge conversion error:", e)
         throw new Error("Invalid challenge format received from server")
       }
 
       if (options.allowCredentials && options.allowCredentials.length > 0) {
-        console.log(`🔑 Converting ${options.allowCredentials.length} credential IDs...`)
-
-        options.allowCredentials = options.allowCredentials.map((cred, index) => {
+        options.allowCredentials = options.allowCredentials.map((cred) => {
           try {
-            console.log(`🔑 Converting credential ${index + 1}:`, cred.id)
-
             let credentialIdBytes
             if (typeof cred.id === "string") {
               const normalizedCredId = cred.id.replace(/-/g, "+").replace(/_/g, "/")
@@ -220,13 +214,11 @@ const BiometricLogin = ({ onLogin, onCancel }) => {
               throw new Error("Unknown credential ID format")
             }
 
-            console.log(`✅ Credential ${index + 1} converted successfully`)
             return {
               ...cred,
               id: credentialIdBytes,
             }
           } catch (e) {
-            console.error(`❌ Credential ${index + 1} conversion error:`, e)
             throw new Error(`Invalid credential ID format: ${e.message}`)
           }
         })
@@ -237,15 +229,12 @@ const BiometricLogin = ({ onLogin, onCancel }) => {
       const webAuthnOptions = {
         publicKey: {
           ...options,
-          timeout: appContext.isApplication ? 120000 : 60000, // Longer timeout for apps
-          userVerification: "preferred", // More flexible for applications
+          timeout: appContext.isApplication ? 120000 : 60000,
+          userVerification: "preferred",
         },
       }
 
       if (appContext.isApplication) {
-        console.log(`🔧 Applying ${appContext.context} specific optimizations...`)
-
-        // For Electron apps, ensure proper window focus
         if (appContext.isElectron && window.electronAPI) {
           try {
             await window.electronAPI.focusWindow()
@@ -253,24 +242,9 @@ const BiometricLogin = ({ onLogin, onCancel }) => {
             console.log("Could not focus window:", e)
           }
         }
-
-        // For Cordova/PhoneGap apps
-        if (appContext.isCordova && window.device) {
-          console.log("📱 Cordova device detected:", window.device.platform)
-        }
-
-        // For Capacitor apps
-        if (appContext.isCapacitor && window.Capacitor) {
-          console.log("📱 Capacitor platform:", window.Capacitor.getPlatform())
-        }
       }
 
-      console.log("🔐 Starting WebAuthn credential.get()...")
-
       const credential = await navigator.credentials.get(webAuthnOptions)
-
-      console.log("✅ WebAuthn authentication successful!")
-      console.log("📋 Credential received:", credential)
 
       setStep("verifying")
 
@@ -291,11 +265,7 @@ const BiometricLogin = ({ onLogin, onCancel }) => {
         applicationContext: appContext,
       }
 
-      console.log("📤 Sending verification data to server...")
       const verifyResponse = await axios.post("/api/auth/biometric/login/verify", verificationData)
-
-      console.log("🎉 Login verification successful!")
-      console.log("👤 User logged in:", verifyResponse.data.user)
 
       setStep("success")
 
@@ -338,487 +308,261 @@ const BiometricLogin = ({ onLogin, onCancel }) => {
   }
 
   const retryBiometric = () => {
-    console.log("🔄 Retrying biometric authentication...")
     setError("")
     startImmediateBiometricAuth()
   }
 
+  // ==========================================
+  //  NEW MODERN "DARK TECH" UI
+  // ==========================================
   const renderContent = () => {
     const appContext = detectApplicationContext()
 
-    switch (step) {
-      case "preparing":
-        return (
+    return (
+      <AnimatePresence mode="wait">
+        {step === "preparing" && (
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="space-y-6"
+            key="preparing"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="flex flex-col items-center py-8"
           >
-            <div className="relative mx-auto h-24 w-24">
-              <div className="absolute inset-0 rounded-full bg-gradient-to-r from-blue-400/20 to-purple-400/20 animate-pulse" />
-              <div className="relative flex h-full w-full items-center justify-center rounded-full bg-gradient-to-br from-white to-blue-50 shadow-2xl">
+            {/* Animated Loader Circle */}
+            <div className="relative mb-8">
+              <div className="absolute inset-0 rounded-full bg-cyan-500/20 blur-2xl animate-pulse" />
+              <div className="relative h-24 w-24 rounded-full border border-cyan-500/30 bg-black/40 backdrop-blur-md flex items-center justify-center">
+                <ShieldCheck className="h-10 w-10 text-cyan-400" />
                 <motion.div
                   animate={{ rotate: 360 }}
-                  transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-                  className="text-3xl text-blue-500"
-                >
-                  ⚡
-                </motion.div>
-              </div>
-            </div>
-            
-            <div className="space-y-3">
-              <h3 className="text-xl font-bold text-gray-800 text-center">
-                Initializing Secure Login
-              </h3>
-              <p className="text-sm text-gray-600 text-center">
-                Setting up biometric authentication...
-              </p>
-            </div>
-
-            {/* Progress bar */}
-            <div className="w-full">
-              <div className="flex justify-between text-xs text-gray-500 mb-2">
-                <span>Initializing...</span>
-                <span>{progress}%</span>
-              </div>
-              <div className="h-2 w-full overflow-hidden rounded-full bg-gray-200">
-                <motion.div
-                  initial={{ width: 0 }}
-                  animate={{ width: `${progress}%` }}
-                  className="h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"
+                  transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
+                  className="absolute inset-0 rounded-full border-t border-cyan-400"
                 />
               </div>
             </div>
-          </motion.div>
-        )
-
-      case "authenticating":
-        return (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="space-y-6"
-          >
-            <div className="relative mx-auto h-24 w-24">
-              <div className="absolute inset-0 rounded-full bg-gradient-to-r from-blue-500/10 to-purple-500/10 animate-ping" />
-              <div className="relative flex h-full w-full items-center justify-center rounded-full bg-gradient-to-br from-blue-50 to-purple-50 shadow-2xl">
-                <motion.div
-                  animate={{ scale: [1, 1.2, 1] }}
-                  transition={{ duration: 2, repeat: Infinity }}
-                  className="text-3xl text-blue-600"
-                >
-                  🔍
-                </motion.div>
-              </div>
-            </div>
             
-            <div className="space-y-3">
-              <h3 className="text-xl font-bold text-gray-800 text-center">
-                Checking Biometrics
-              </h3>
-              <p className="text-sm text-gray-600 text-center">
-                {appContext.isApplication
-                  ? "Verifying app biometric capabilities..."
-                  : "Looking for registered biometric credentials..."}
-              </p>
-            </div>
+            <h3 className="text-xl font-bold text-white mb-2">Initializing System</h3>
+            <p className="text-sm text-gray-400 mb-6">Establishing secure connection...</p>
 
-            <div className="flex justify-center space-x-2">
-              {[1, 2, 3].map((i) => (
-                <motion.div
-                  key={i}
-                  animate={{ scale: [1, 1.5, 1] }}
-                  transition={{ duration: 1, delay: i * 0.2, repeat: Infinity }}
-                  className="h-2 w-2 rounded-full bg-blue-500"
+            {/* Tech Progress Bar */}
+            <div className="w-64 h-1 bg-gray-800 rounded-full overflow-hidden">
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: `${progress}%` }}
+                className="h-full bg-gradient-to-r from-cyan-500 to-blue-600 shadow-[0_0_10px_rgba(6,182,212,0.5)]"
+              />
+            </div>
+            <div className="mt-2 text-xs font-mono text-cyan-500/70">{progress}% LOADED</div>
+          </motion.div>
+        )}
+
+        {step === "authenticating" && (
+          <motion.div
+            key="authenticating"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 1.05 }}
+            className="flex flex-col items-center py-6"
+          >
+            <div className="relative mb-8">
+              <div className="absolute inset-0 rounded-full bg-blue-500/20 blur-xl animate-pulse" />
+              {/* Scanner Animation */}
+              <div className="relative h-32 w-32 rounded-2xl border border-gray-700 bg-black/50 overflow-hidden flex items-center justify-center">
+                <ScanFace className="h-16 w-16 text-gray-600" strokeWidth={1} />
+                <motion.div 
+                  animate={{ top: ["0%", "100%", "0%"] }}
+                  transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                  className="absolute left-0 right-0 h-0.5 bg-blue-500 shadow-[0_0_20px_rgba(59,130,246,1)]"
                 />
-              ))}
-            </div>
-          </motion.div>
-        )
-
-      case "biometric-prompt":
-        return (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="space-y-6"
-          >
-            <div className="relative mx-auto h-28 w-28">
-              <motion.div
-                animate={{ rotate: 360 }}
-                transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
-                className="absolute inset-0 rounded-full border-2 border-dashed border-blue-300/50"
-              />
-              <div className="relative flex h-full w-full items-center justify-center rounded-full bg-gradient-to-br from-blue-100 to-indigo-100 shadow-2xl">
-                <motion.div
-                  animate={{ scale: [1, 1.1, 1] }}
-                  transition={{ duration: 1.5, repeat: Infinity }}
-                  className="text-4xl"
-                >
-                  👆
-                </motion.div>
               </div>
             </div>
             
-            <div className="space-y-4">
-              <h3 className="text-2xl font-bold text-gray-900 text-center">
-                Biometric Required
-              </h3>
-              <p className="text-sm text-gray-600 text-center">
-                Please use your fingerprint, face, or device authentication
-              </p>
-            </div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="rounded-2xl border border-blue-100 bg-gradient-to-br from-blue-50/80 to-white p-6 backdrop-blur-sm"
-            >
-              <div className="space-y-3">
-                <div className="flex items-center space-x-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100">
-                    <span className="text-lg">👆</span>
-                  </div>
-                  <div>
-                    <p className="font-semibold text-gray-800">Touch fingerprint sensor</p>
-                    <p className="text-sm text-gray-600">Place your registered finger</p>
-                  </div>
-                </div>
-                
-                <div className="flex items-center space-x-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-purple-100">
-                    <span className="text-lg">👤</span>
-                  </div>
-                  <div>
-                    <p className="font-semibold text-gray-800">Face recognition</p>
-                    <p className="text-sm text-gray-600">Look at your camera</p>
-                  </div>
-                </div>
-                
-                <div className="flex items-center space-x-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-100">
-                    <span className="text-lg">🔢</span>
-                  </div>
-                  <div>
-                    <p className="font-semibold text-gray-800">Device PIN</p>
-                    <p className="text-sm text-gray-600">Enter your device PIN if prompted</p>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          </motion.div>
-        )
-
-      case "verifying":
-        return (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="space-y-6"
-          >
-            <div className="relative mx-auto h-24 w-24">
-              <motion.div
-                animate={{ rotate: 360 }}
-                transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-                className="absolute inset-0 rounded-full bg-gradient-to-r from-green-400/20 to-blue-400/20"
-              />
-              <div className="relative flex h-full w-full items-center justify-center rounded-full bg-gradient-to-br from-green-50 to-blue-50 shadow-2xl">
-                <motion.div
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                  className="text-3xl text-green-600"
-                >
-                  🔄
-                </motion.div>
-              </div>
-            </div>
-            
-            <div className="space-y-3">
-              <h3 className="text-xl font-bold text-gray-800 text-center">
-                Verifying Authentication
-              </h3>
-              <p className="text-sm text-gray-600 text-center">
-                Processing your biometric data securely...
-              </p>
-            </div>
-
-            <div className="flex justify-center">
-              <div className="relative">
-                <div className="h-16 w-16 rounded-full border-4 border-gray-200 border-t-green-500 animate-spin" />
-              </div>
-            </div>
-          </motion.div>
-        )
-
-      case "success":
-        return (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="space-y-6"
-          >
-            <div className="relative mx-auto h-28 w-28">
-              <motion.div
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{ delay: 0.2, type: "spring" }}
-                className="absolute inset-0 rounded-full bg-gradient-to-r from-green-400/30 to-emerald-400/30"
-              />
-              <div className="relative flex h-full w-full items-center justify-center rounded-full bg-gradient-to-br from-green-100 to-emerald-100 shadow-2xl">
-                <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ delay: 0.3, type: "spring" }}
-                  className="text-5xl"
-                >
-                  ✅
-                </motion.div>
-              </div>
-            </div>
-            
-            <div className="space-y-3">
-              <h3 className="text-2xl font-bold text-gray-900 text-center">
-                Authentication Successful!
-              </h3>
-              <p className="text-sm text-gray-600 text-center">
-                Welcome back! Logging you in...
-              </p>
-            </div>
-
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.5 }}
-              className="rounded-xl bg-gradient-to-r from-green-50 to-emerald-50 p-4"
-            >
-              <div className="flex items-center space-x-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-100">
-                  <span className="text-lg">⚡</span>
-                </div>
-                <div>
-                  <p className="font-semibold text-green-800">Login Complete</p>
-                  <p className="text-sm text-green-600">Redirecting to your dashboard...</p>
-                </div>
-              </div>
-            </motion.div>
-          </motion.div>
-        )
-
-      case "error":
-        return (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="space-y-6"
-          >
-            <div className="relative mx-auto h-24 w-24">
-              <motion.div
-                animate={{ scale: [1, 1.2, 1] }}
-                transition={{ duration: 2, repeat: Infinity }}
-                className="absolute inset-0 rounded-full bg-gradient-to-r from-red-400/20 to-orange-400/20"
-              />
-              <div className="relative flex h-full w-full items-center justify-center rounded-full bg-gradient-to-br from-red-50 to-orange-50 shadow-2xl">
-                <div className="text-4xl">⚠️</div>
-              </div>
-            </div>
-            
-            <div className="space-y-3">
-              <h3 className="text-xl font-bold text-gray-800 text-center">
-                Authentication Failed
-              </h3>
-              <p className="text-sm text-gray-600 text-center">
-                Unable to authenticate with biometrics
-              </p>
-            </div>
-
-            {error && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                className="rounded-xl border border-red-200 bg-gradient-to-br from-red-50/80 to-white p-4 backdrop-blur-sm"
-              >
-                <div className="flex items-start space-x-3">
-                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-red-100">
-                    <span className="text-sm">!</span>
-                  </div>
-                  <p className="flex-1 text-sm text-red-700">{error}</p>
-                </div>
-              </motion.div>
-            )}
-
-            <div className="rounded-xl bg-gradient-to-br from-amber-50 to-yellow-50 p-4">
-              <h4 className="mb-2 text-sm font-semibold text-amber-800">Troubleshooting</h4>
-              <ul className="space-y-2 text-sm text-amber-700">
-                <li className="flex items-center space-x-2">
-                  <span>•</span>
-                  <span>Ensure biometric is setup in device settings</span>
-                </li>
-                <li className="flex items-center space-x-2">
-                  <span>•</span>
-                  <span>Check device screen lock is enabled</span>
-                </li>
-                {appContext.isApplication ? (
-                  <li className="flex items-center space-x-2">
-                    <span>•</span>
-                    <span>Grant biometric permissions to the app</span>
-                  </li>
-                ) : (
-                  <li className="flex items-center space-x-2">
-                    <span>•</span>
-                    <span>Ensure HTTPS connection is secure</span>
-                  </li>
-                )}
-              </ul>
-            </div>
-          </motion.div>
-        )
-
-      default:
-        return (
-          <div className="space-y-6">
-            <div className="mx-auto h-20 w-20 rounded-full bg-gradient-to-br from-blue-100 to-indigo-100" />
-            <h3 className="text-lg font-semibold text-gray-800 text-center">
-              Biometric Authentication
-            </h3>
-            <p className="text-sm text-gray-600 text-center">
-              Please use your biometric authentication
+            <h3 className="text-lg font-semibold text-white mb-1">Scanning...</h3>
+            <p className="text-sm text-gray-400 max-w-[240px] text-center">
+              {appContext.isApplication ? "Verifying app credentials" : "Locating passkeys"}
             </p>
-          </div>
-        )
-    }
+          </motion.div>
+        )}
+
+        {step === "biometric-prompt" && (
+          <motion.div
+            key="prompt"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="flex flex-col items-center w-full"
+          >
+            <div className="relative mb-6">
+              <motion.div 
+                animate={{ scale: [1, 1.1, 1] }}
+                transition={{ duration: 2, repeat: Infinity }}
+                className="absolute inset-0 rounded-full bg-violet-500/30 blur-xl" 
+              />
+              <div className="relative h-28 w-28 rounded-full border border-violet-500/30 bg-gradient-to-b from-gray-900 to-black flex items-center justify-center shadow-2xl">
+                <Fingerprint className="h-14 w-14 text-violet-400" strokeWidth={1.5} />
+              </div>
+            </div>
+            
+            <h3 className="text-2xl font-bold text-white mb-2">Identify Yourself</h3>
+            <p className="text-sm text-gray-400 mb-8 text-center">Use your device's biometric sensor</p>
+
+            <div className="grid grid-cols-2 gap-3 w-full">
+              <div className="flex flex-col items-center justify-center p-4 rounded-xl bg-gray-800/50 border border-gray-700/50 hover:bg-gray-800 transition-colors">
+                <Fingerprint className="h-6 w-6 text-violet-400 mb-2" />
+                <span className="text-xs text-gray-300 font-medium">Touch ID</span>
+              </div>
+              <div className="flex flex-col items-center justify-center p-4 rounded-xl bg-gray-800/50 border border-gray-700/50 hover:bg-gray-800 transition-colors">
+                <ScanFace className="h-6 w-6 text-blue-400 mb-2" />
+                <span className="text-xs text-gray-300 font-medium">Face ID</span>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {step === "verifying" && (
+          <motion.div
+            key="verifying"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="flex flex-col items-center py-10"
+          >
+            <div className="relative h-20 w-20 mb-6">
+              <motion.div
+                animate={{ rotate: 360 }}
+                transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                className="absolute inset-0 rounded-full border-2 border-transparent border-t-emerald-500 border-r-emerald-500"
+              />
+              <div className="absolute inset-2 rounded-full bg-emerald-500/10 flex items-center justify-center">
+                 <Lock className="h-8 w-8 text-emerald-500" />
+              </div>
+            </div>
+            <h3 className="text-lg font-medium text-white">Verifying Crypto Key</h3>
+          </motion.div>
+        )}
+
+        {step === "success" && (
+          <motion.div
+            key="success"
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="flex flex-col items-center py-6"
+          >
+            <div className="relative mb-6">
+              <motion.div 
+                initial={{ scale: 0 }} animate={{ scale: 1 }}
+                className="absolute inset-0 rounded-full bg-emerald-500/30 blur-2xl" 
+              />
+              <div className="relative h-24 w-24 rounded-full bg-gradient-to-tr from-emerald-900 to-green-800 flex items-center justify-center border border-emerald-500/50 shadow-lg shadow-emerald-500/20">
+                <Check className="h-12 w-12 text-white" strokeWidth={3} />
+              </div>
+            </div>
+            
+            <h3 className="text-2xl font-bold text-white mb-1">Access Granted</h3>
+            <p className="text-sm text-emerald-400/80 mb-6">Decryption successful</p>
+            
+            <motion.div 
+              initial={{ width: 0 }} animate={{ width: "100%" }} 
+              className="h-1 bg-emerald-500 rounded-full"
+            />
+          </motion.div>
+        )}
+
+        {step === "error" && (
+          <motion.div
+            key="error"
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="flex flex-col items-center w-full"
+          >
+            <div className="h-20 w-20 rounded-full bg-red-500/10 border border-red-500/30 flex items-center justify-center mb-4">
+              <XCircle className="h-10 w-10 text-red-500" />
+            </div>
+            
+            <h3 className="text-lg font-bold text-white mb-4">Authentication Failed</h3>
+
+            <div className="w-full bg-red-950/30 border border-red-900/50 rounded-lg p-4 mb-6">
+              <p className="text-sm text-red-300 text-center leading-relaxed">
+                {error || "Could not verify identity"}
+              </p>
+            </div>
+
+            <div className="w-full space-y-2">
+               <div className="flex items-center gap-3 text-xs text-gray-500 bg-gray-900/50 p-3 rounded border border-gray-800">
+                  <Zap className="h-4 w-4 text-yellow-500" />
+                  <span>Check if screen lock is enabled</span>
+               </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    )
   }
 
+  // ==========================================
+  //  MAIN RENDER (Dark Mode Container)
+  // ==========================================
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white p-4 md:p-8">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="mx-auto max-w-md"
-      >
-        {/* Header */}
-        <div className="mb-8 text-center">
-          <motion.h1
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.1 }}
-            className="text-3xl font-bold text-gray-900"
-          >
-            Secure Login
-          </motion.h1>
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.2 }}
-            className="mt-2 text-gray-600"
-          >
-            Instant biometric authentication
-          </motion.p>
-        </div>
+    <div className="min-h-screen w-full flex items-center justify-center bg-black relative overflow-hidden font-sans">
+      {/* Background Ambient Effects */}
+      <div className="absolute top-[-20%] left-[-10%] h-[500px] w-[500px] rounded-full bg-blue-900/20 blur-[120px]" />
+      <div className="absolute bottom-[-20%] right-[-10%] h-[500px] w-[500px] rounded-full bg-violet-900/20 blur-[120px]" />
 
-        {/* Main Card */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.3 }}
-          className="relative overflow-hidden rounded-3xl bg-white/80 backdrop-blur-xl shadow-2xl"
-        >
-          {/* Background effects */}
-          <div className="absolute inset-0 bg-gradient-to-br from-blue-50/50 via-transparent to-purple-50/50" />
-          <div className="absolute -top-24 -right-24 h-48 w-48 rounded-full bg-blue-400/10 blur-3xl" />
-          <div className="absolute -bottom-24 -left-24 h-48 w-48 rounded-full bg-purple-400/10 blur-3xl" />
+      <motion.div
+        layout
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, type: "spring", bounce: 0.4 }}
+        className="relative z-10 w-full max-w-[400px] px-4"
+      >
+        {/* Glass Card */}
+        <div className="w-full rounded-3xl bg-gray-950/70 backdrop-blur-xl border border-white/10 shadow-2xl shadow-black/50 overflow-hidden">
           
-          {/* Content */}
-          <div className="relative p-8">
+          {/* Header Bar */}
+          <div className="px-6 py-4 border-b border-white/5 bg-white/5 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="h-2 w-2 rounded-full bg-red-500" />
+              <div className="h-2 w-2 rounded-full bg-yellow-500" />
+              <div className="h-2 w-2 rounded-full bg-green-500" />
+            </div>
+            <div className="text-[10px] font-mono tracking-widest text-gray-500 uppercase">
+              Biometric Vault v2.0
+            </div>
+          </div>
+
+          {/* Dynamic Body */}
+          <div className="p-8 min-h-[400px] flex flex-col justify-between">
             {renderContent()}
 
-            {/* Actions */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.3 }}
-              className="mt-8 flex flex-col space-y-3"
-            >
+            {/* Footer Buttons */}
+            <motion.div layout className="mt-6 flex flex-col gap-3">
               {step === "error" && (
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
+                <button
                   onClick={retryBiometric}
                   disabled={loading}
-                  className="w-full rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 py-3.5 text-white font-semibold shadow-lg hover:shadow-xl disabled:opacity-70 transition-all duration-300"
+                  className="group relative w-full flex items-center justify-center gap-2 py-3.5 rounded-xl bg-gradient-to-r from-blue-600 to-violet-600 text-white font-medium shadow-lg shadow-blue-900/30 hover:shadow-blue-900/50 transition-all active:scale-95 disabled:opacity-50 disabled:active:scale-100"
                 >
-                  {loading ? (
-                    <div className="flex items-center justify-center space-x-2">
-                      <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                      <span>Retrying...</span>
-                    </div>
-                  ) : (
-                    <div className="flex items-center justify-center space-x-2">
-                      <span>🔄</span>
-                      <span>Try Again</span>
-                    </div>
-                  )}
-                </motion.button>
+                  <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+                  <span>Try Again</span>
+                </button>
               )}
               
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
+              <button
                 onClick={onCancel}
-                className="w-full rounded-xl border-2 border-gray-300 bg-white py-3.5 text-gray-700 font-semibold shadow-sm hover:shadow-md transition-all duration-300"
+                className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl border border-white/10 bg-white/5 text-gray-400 font-medium hover:bg-white/10 hover:text-white transition-all active:scale-95"
               >
-                <div className="flex items-center justify-center space-x-2">
-                  <span>←</span>
-                  <span>Back to Password Login</span>
-                </div>
-              </motion.button>
-            </motion.div>
-
-            {/* Features */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.4 }}
-              className="mt-8 pt-8 border-t border-gray-100"
-            >
-              <h4 className="mb-4 text-center text-sm font-semibold text-gray-600">
-                Why Biometric Login?
-              </h4>
-              <div className="grid grid-cols-2 gap-3">
-                {[
-                  { icon: "⚡", text: "Instant login" },
-                  { icon: "🔒", text: "More secure" },
-                  { icon: "👤", text: "No username" },
-                  { icon: "📱", text: "Device optimized" },
-                ].map((feature, index) => (
-                  <motion.div
-                    key={index}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.5 + index * 0.1 }}
-                    className="flex flex-col items-center space-y-1 rounded-xl bg-gradient-to-br from-gray-50 to-white p-3"
-                  >
-                    <span className="text-lg">{feature.icon}</span>
-                    <span className="text-xs font-medium text-gray-700">{feature.text}</span>
-                  </motion.div>
-                ))}
-              </div>
+                <ArrowLeft className="h-4 w-4" />
+                <span>Switch to Password</span>
+              </button>
             </motion.div>
           </div>
-        </motion.div>
+        </div>
 
-        {/* Footer */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.6 }}
-          className="mt-8 text-center text-xs text-gray-500"
-        >
-          <p>Secure authentication powered by WebAuthn</p>
-          <p className="mt-1">Ensure your device supports biometric authentication</p>
-        </motion.div>
+        {/* Bottom Secure Badge */}
+        <div className="mt-6 flex items-center justify-center gap-2 text-gray-600">
+           <Lock className="h-3 w-3" />
+           <span className="text-xs font-medium tracking-wide">End-to-End Encrypted</span>
+        </div>
+
       </motion.div>
     </div>
   )

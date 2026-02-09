@@ -4,8 +4,28 @@ import { useState, useEffect } from "react"
 import { Link, useSearchParams } from "react-router-dom"
 import axios from "axios"
 import DocumentCard from "../components/DocumentCard"
+// Modern Icons
+import { 
+  Search, 
+  Filter, 
+  LayoutGrid, 
+  List, 
+  FolderOpen, 
+  Upload, 
+  FileText, 
+  Loader2, 
+  X, 
+  ChevronDown, 
+  Trash2, 
+  Folder,
+  SlidersHorizontal,
+  RefreshCw
+} from "lucide-react"
 
 const MyDocuments = () => {
+  // ==============================
+  // LOGIC & STATE (UNCHANGED)
+  // ==============================
   const [documents, setDocuments] = useState([])
   const [filteredDocuments, setFilteredDocuments] = useState([])
   const [folders, setFolders] = useState([])
@@ -146,155 +166,168 @@ const MyDocuments = () => {
     return folder ? folder.name : "Unknown Folder"
   }
 
+  // ==============================
+  // MODERN UI RENDERING
+  // ==============================
+
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-blue-50">
-        <div className="text-center animate-fade-in">
-          <div className="relative inline-block">
-            <div className="w-20 h-20 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
-            <div className="absolute inset-0 flex items-center justify-center">
-              <svg className="w-10 h-10 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50/50 backdrop-blur-sm">
+        <div className="flex flex-col items-center gap-4 animate-fade-in">
+          <div className="relative">
+            <div className="absolute inset-0 bg-blue-500/20 blur-xl rounded-full"></div>
+            <div className="relative bg-white p-4 rounded-2xl shadow-xl ring-1 ring-gray-100">
+              <Loader2 className="w-10 h-10 text-blue-600 animate-spin" />
             </div>
           </div>
-          <p className="mt-6 text-gray-600 font-medium animate-pulse">Loading your documents...</p>
+          <p className="text-gray-500 font-medium text-sm animate-pulse tracking-wide">
+            Loading your dashboard...
+          </p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 p-4 md:p-6">
+    <div className="min-h-screen bg-slate-50/50 p-4 md:p-6 lg:p-8 font-sans text-slate-900">
       <div className="max-w-7xl mx-auto space-y-8 animate-slide-up">
-        {/* Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-3xl shadow-2xl p-6 md:p-8 text-white overflow-hidden relative">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -translate-y-32 translate-x-32"></div>
-          <div className="absolute bottom-0 left-0 w-64 h-64 bg-white/10 rounded-full translate-y-32 -translate-x-32"></div>
+        
+        {/* === HEADER SECTION === */}
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-700 p-6 md:p-10 shadow-2xl shadow-blue-900/20">
+          {/* Decorative Background Elements */}
+          <div className="absolute top-0 right-0 -mt-20 -mr-20 w-80 h-80 bg-white/10 blur-3xl rounded-full pointer-events-none"></div>
+          <div className="absolute bottom-0 left-0 -mb-20 -ml-20 w-80 h-80 bg-purple-500/20 blur-3xl rounded-full pointer-events-none"></div>
           
-          <div className="relative z-10">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-              <div>
-                <div className="flex items-center gap-4 mb-4">
-                  <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center">
-                    <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                  </div>
-                  <div>
-                    <h1 className="text-3xl font-bold">My Documents</h1>
-                    <p className="text-blue-100 mt-2">Manage and organize your uploaded documents securely</p>
-                  </div>
+          <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-8">
+            <div className="flex items-start gap-5">
+              <div className="p-3 bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl shadow-inner">
+                <FileText className="w-8 h-8 text-white" />
+              </div>
+              <div className="space-y-1">
+                <h1 className="text-3xl md:text-4xl font-bold text-white tracking-tight">
+                  My Documents
+                </h1>
+                <p className="text-blue-100/90 text-sm md:text-base font-light max-w-lg">
+                  Securely manage, organize, and access all your important files in one centralized dashboard.
+                </p>
+              </div>
+            </div>
+
+            {/* Header Actions */}
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex items-center gap-3 bg-white/10 backdrop-blur-md px-4 py-2 rounded-xl border border-white/10">
+                <div className="flex flex-col">
+                  <span className="text-[10px] uppercase tracking-wider text-blue-200 font-semibold">Total</span>
+                  <span className="text-lg font-bold text-white leading-none">{documents.length}</span>
                 </div>
-                
-                <div className="flex items-center gap-4">
-                  <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/20">
-                    <div className="text-xs text-blue-100">Total Documents</div>
-                    <div className="font-semibold">{documents.length}</div>
-                  </div>
-                  <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/20">
-                    <div className="text-xs text-blue-100">Filtered</div>
-                    <div className="font-semibold">{filteredDocuments.length}</div>
-                  </div>
+                <div className="w-px h-8 bg-white/20"></div>
+                <div className="flex flex-col">
+                  <span className="text-[10px] uppercase tracking-wider text-blue-200 font-semibold">Visible</span>
+                  <span className="text-lg font-bold text-white leading-none">{filteredDocuments.length}</span>
                 </div>
               </div>
+
+              <Link
+                to="/folders"
+                className="flex items-center gap-2 px-5 py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl backdrop-blur-md transition-all duration-200 border border-white/10 font-medium active:scale-95"
+              >
+                <FolderOpen className="w-5 h-5" />
+                <span>Folders</span>
+              </Link>
               
-              <div className="flex flex-col sm:flex-row gap-4">
-                <Link
-                  to="/folders"
-                  className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm text-white px-5 py-2.5 rounded-xl hover:bg-white/30 transition-all duration-300 border border-white/20"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
-                  </svg>
-                  Manage Folders
-                </Link>
-                <Link
-                  to="/upload"
-                  className="inline-flex items-center gap-2 bg-white text-blue-600 font-semibold px-5 py-2.5 rounded-xl hover:bg-blue-50 shadow-lg hover:shadow-xl transition-all duration-300"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                  </svg>
-                  Upload New
-                </Link>
-              </div>
+              <Link
+                to="/upload"
+                className="flex items-center gap-2 px-6 py-3 bg-white text-blue-700 hover:bg-blue-50 rounded-xl shadow-lg shadow-blue-900/20 transition-all duration-200 font-bold active:scale-95"
+              >
+                <Upload className="w-5 h-5" />
+                <span>Upload New</span>
+              </Link>
             </div>
           </div>
         </div>
 
-        {/* Search and Filters */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl p-6 border border-white/40">
-          <div className="flex flex-col lg:flex-row gap-6">
+        {/* === CONTROLS & FILTERS === */}
+        <div className="bg-white rounded-2xl shadow-xl shadow-slate-200/60 border border-slate-100 p-5 md:p-6 sticky top-4 z-30 backdrop-blur-xl bg-white/90">
+          <div className="flex flex-col lg:flex-row gap-5">
+            
             {/* Search Bar */}
-            <div className="flex-1">
-              <div className="relative">
-                <input
-                  type="text"
-                  placeholder="Search documents by name or category..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-12 pr-10 py-3.5 bg-gray-50 border border-gray-300 rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-                <svg className="w-5 h-5 text-gray-400 absolute left-4 top-1/2 transform -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-                {searchTerm && (
-                  <button
-                    onClick={clearSearch}
-                    className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                )}
+            <div className="flex-1 relative group">
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <Search className="w-5 h-5 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
               </div>
+              <input
+                type="text"
+                placeholder="Search by name, category..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-11 pr-10 py-3.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200"
+              />
+              {searchTerm && (
+                <button
+                  onClick={clearSearch}
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                >
+                  <div className="p-1 hover:bg-slate-200 rounded-full transition-colors">
+                    <X className="w-4 h-4 text-slate-500" />
+                  </div>
+                </button>
+              )}
             </div>
 
-            {/* View Toggle */}
-            <div className="flex items-center gap-4">
-              <div className="flex bg-gray-100 rounded-lg p-1">
+            {/* View & Clear Controls */}
+            <div className="flex items-center gap-3">
+              <div className="bg-slate-100 p-1 rounded-xl flex items-center border border-slate-200">
                 <button
                   onClick={() => setViewMode("grid")}
-                  className={`p-2 rounded-md transition-all duration-300 ${
-                    viewMode === "grid" ? "bg-white text-blue-600 shadow" : "text-gray-600 hover:text-gray-800"
+                  className={`p-2.5 rounded-lg transition-all duration-200 ${
+                    viewMode === "grid" 
+                      ? "bg-white text-blue-600 shadow-sm" 
+                      : "text-slate-500 hover:text-slate-700 hover:bg-slate-200/50"
                   }`}
+                  aria-label="Grid View"
                 >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-                  </svg>
+                  <LayoutGrid className="w-5 h-5" />
                 </button>
                 <button
                   onClick={() => setViewMode("list")}
-                  className={`p-2 rounded-md transition-all duration-300 ${
-                    viewMode === "list" ? "bg-white text-blue-600 shadow" : "text-gray-600 hover:text-gray-800"
+                  className={`p-2.5 rounded-lg transition-all duration-200 ${
+                    viewMode === "list" 
+                      ? "bg-white text-blue-600 shadow-sm" 
+                      : "text-slate-500 hover:text-slate-700 hover:bg-slate-200/50"
                   }`}
+                  aria-label="List View"
                 >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
-                  </svg>
+                  <List className="w-5 h-5" />
                 </button>
               </div>
 
-              <button
-                onClick={clearFilters}
-                className="px-4 py-2.5 text-sm font-medium text-gray-600 hover:text-gray-800 transition-colors duration-300"
-              >
-                Clear Filters
-              </button>
+              {(selectedCategory || selectedFolder || searchTerm) && (
+                <button
+                  onClick={clearFilters}
+                  className="flex items-center gap-2 px-4 py-3 text-sm font-medium text-slate-600 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all duration-200 border border-transparent hover:border-red-100"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                  <span className="hidden sm:inline">Reset</span>
+                </button>
+              )}
             </div>
           </div>
 
-          {/* Filter Dropdowns */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Filter by Category</label>
+          {/* Secondary Filters */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-5 pt-5 border-t border-slate-100">
+            {/* Category Filter */}
+            <div className="relative group">
+              <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 block pl-1">
+                Category
+              </label>
               <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                  <Filter className="w-4 h-4 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
+                </div>
                 <select
                   value={selectedCategory}
                   onChange={(e) => setSelectedCategory(e.target.value)}
-                  className="w-full px-4 py-3.5 bg-gray-50 border border-gray-300 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none"
+                  className="w-full pl-10 pr-10 py-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all appearance-none cursor-pointer"
                 >
                   <option value="">All Categories</option>
                   {categories.map((category) => (
@@ -303,217 +336,163 @@ const MyDocuments = () => {
                     </option>
                   ))}
                 </select>
-                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-700">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                  </svg>
+                <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
+                  <ChevronDown className="w-4 h-4 text-slate-400" />
                 </div>
               </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Filter by Folder</label>
+            {/* Folder Filter */}
+            <div className="relative group">
+              <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 block pl-1">
+                Folder
+              </label>
               <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                  <Folder className="w-4 h-4 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
+                </div>
                 <select
                   value={selectedFolder}
                   onChange={(e) => setSelectedFolder(e.target.value)}
-                  className="w-full px-4 py-3.5 bg-gray-50 border border-gray-300 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none"
+                  className="w-full pl-10 pr-10 py-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all appearance-none cursor-pointer"
                 >
                   <option value="">All Folders</option>
-                  <option value="no-folder">No Folder</option>
+                  <option value="no-folder">Unorganized (No Folder)</option>
                   {folders.map((folder) => (
                     <option key={folder._id} value={folder._id}>
                       {folder.name}
                     </option>
                   ))}
                 </select>
-                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-700">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                  </svg>
+                <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
+                  <ChevronDown className="w-4 h-4 text-slate-400" />
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Results Summary */}
-        <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-lg font-semibold text-gray-800">
-                Showing {filteredDocuments.length} of {documents.length} documents
-              </h3>
-              {(selectedFolder || selectedCategory || searchTerm) && (
-                <div className="flex items-center gap-2 mt-2">
-                  <span className="text-sm text-gray-600">Active filters:</span>
-                  {selectedCategory && (
-                    <span className="inline-flex items-center gap-1 bg-blue-100 text-blue-800 text-xs px-3 py-1 rounded-full">
-                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-                      </svg>
-                      {selectedCategory}
-                    </span>
-                  )}
-                  {selectedFolder && (
-                    <span className="inline-flex items-center gap-1 bg-green-100 text-green-800 text-xs px-3 py-1 rounded-full">
-                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
-                      </svg>
-                      {getFolderName(selectedFolder)}
-                    </span>
-                  )}
-                  {searchTerm && (
-                    <span className="inline-flex items-center gap-1 bg-purple-100 text-purple-800 text-xs px-3 py-1 rounded-full">
-                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                      </svg>
-                      "{searchTerm}"
-                    </span>
-                  )}
-                </div>
-              )}
-            </div>
+        {/* === ACTIVE FILTERS INDICATOR === */}
+        {(selectedFolder || selectedCategory || searchTerm) && (
+          <div className="flex flex-wrap items-center gap-2 animate-fade-in">
+             <span className="text-sm font-medium text-slate-500 mr-2 flex items-center gap-2">
+               <SlidersHorizontal className="w-4 h-4" />
+               Active Filters:
+             </span>
+             {selectedCategory && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-50 text-blue-700 border border-blue-100 rounded-full text-xs font-medium">
+                  Category: {selectedCategory}
+                  <button onClick={() => setSelectedCategory("")} className="hover:text-blue-900"><X className="w-3 h-3"/></button>
+                </span>
+             )}
+             {selectedFolder && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-50 text-indigo-700 border border-indigo-100 rounded-full text-xs font-medium">
+                  Folder: {getFolderName(selectedFolder)}
+                  <button onClick={() => setSelectedFolder("")} className="hover:text-indigo-900"><X className="w-3 h-3"/></button>
+                </span>
+             )}
+             {searchTerm && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-purple-50 text-purple-700 border border-purple-100 rounded-full text-xs font-medium">
+                  Search: "{searchTerm}"
+                  <button onClick={clearSearch} className="hover:text-purple-900"><X className="w-3 h-3"/></button>
+                </span>
+             )}
           </div>
-        </div>
+        )}
 
-        {/* Documents Grid/List */}
+        {/* === DOCUMENT CONTENT === */}
         {filteredDocuments.length > 0 ? (
-          viewMode === "grid" ? (
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {filteredDocuments.map((document, index) => (
-                <div key={document._id} className="animate-slide-in" style={{animationDelay: `${index * 0.1}s`}}>
-                  <DocumentCard
-                    document={document}
-                    onDelete={handleDeleteDocument}
-                    onMove={handleMoveDocument}
-                    folders={folders}
-                    showUser={false}
-                  />
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {filteredDocuments.map((document, index) => (
-                <div key={document._id} className="animate-slide-in" style={{animationDelay: `${index * 0.1}s`}}>
-                  <DocumentCard
-                    document={document}
-                    onDelete={handleDeleteDocument}
-                    onMove={handleMoveDocument}
-                    folders={folders}
-                    showUser={false}
-                    listView={true}
-                  />
-                </div>
-              ))}
-            </div>
-          )
+          <div className={
+            viewMode === "grid" 
+              ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" 
+              : "space-y-3"
+          }>
+            {filteredDocuments.map((document, index) => (
+              <div 
+                key={document._id} 
+                className="animate-slide-in" 
+                style={{
+                  animationDelay: `${index * 0.05}s`,
+                  animationFillMode: 'both'
+                }}
+              >
+                <DocumentCard
+                  document={document}
+                  onDelete={handleDeleteDocument}
+                  onMove={handleMoveDocument}
+                  folders={folders}
+                  showUser={false}
+                  listView={viewMode === "list"}
+                />
+              </div>
+            ))}
+          </div>
         ) : (
-          <div className="text-center py-16 bg-white rounded-3xl shadow-2xl border border-gray-200">
-            <div className="w-32 h-32 bg-gradient-to-r from-blue-100 to-purple-100 rounded-full flex items-center justify-center mx-auto mb-8">
-              <svg className="w-16 h-16 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
+          /* EMPTY STATE */
+          <div className="flex flex-col items-center justify-center py-20 px-4 bg-white rounded-3xl shadow-sm border border-dashed border-slate-300 text-center animate-fade-in">
+            <div className="relative mb-6 group cursor-default">
+              <div className="absolute inset-0 bg-blue-100 rounded-full scale-110 group-hover:scale-125 transition-transform duration-500"></div>
+              <div className="relative bg-white p-5 rounded-full shadow-sm ring-1 ring-blue-50">
+                <Search className="w-10 h-10 text-blue-500" />
+              </div>
             </div>
-            <h3 className="text-2xl font-bold text-gray-800 mb-4">No Documents Found</h3>
-            <p className="text-gray-600 mb-8 max-w-md mx-auto">
+            
+            <h3 className="text-xl font-bold text-slate-800 mb-2">No documents found</h3>
+            <p className="text-slate-500 max-w-sm mx-auto mb-8 leading-relaxed">
               {searchTerm || selectedCategory || selectedFolder
-                ? "No documents match your search criteria. Try adjusting your filters or search term."
-                : "You haven't uploaded any documents yet. Start by uploading your first document."}
+                ? "We couldn't find any documents matching your current filters. Try clearing them to see all files."
+                : "You haven't uploaded any documents yet. Get started by adding your first file."}
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+
+            <div className="flex flex-col sm:flex-row gap-4">
               {searchTerm || selectedCategory || selectedFolder ? (
                 <button
                   onClick={clearFilters}
-                  className="inline-flex items-center gap-2 bg-gray-800 text-white font-semibold px-6 py-3 rounded-xl hover:bg-gray-900 transition-all duration-300"
+                  className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-slate-800 text-white rounded-xl hover:bg-slate-900 transition-colors font-medium shadow-lg shadow-slate-200"
                 >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                  </svg>
+                  <RefreshCw className="w-4 h-4" />
                   Clear All Filters
                 </button>
               ) : (
-                <Link
-                  to="/upload"
-                  className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold px-6 py-3 rounded-xl hover:shadow-lg transition-all duration-300"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                  </svg>
-                  Upload Your First Document
-                </Link>
+                <>
+                  <Link
+                    to="/upload"
+                    className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all font-medium shadow-lg shadow-blue-200 hover:shadow-blue-300"
+                  >
+                    <Upload className="w-4 h-4" />
+                    Upload Document
+                  </Link>
+                  <Link
+                    to="/folders"
+                    className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-white text-slate-700 border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors font-medium"
+                  >
+                    <FolderOpen className="w-4 h-4" />
+                    Manage Folders
+                  </Link>
+                </>
               )}
-              <Link
-                to="/folders"
-                className="inline-flex items-center gap-2 bg-white border border-gray-300 text-gray-700 font-medium px-6 py-3 rounded-xl hover:bg-gray-50 transition-all duration-300"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
-                </svg>
-                Manage Folders
-              </Link>
             </div>
           </div>
         )}
       </div>
 
+      {/* Global Animations Styles */}
       <style jsx global>{`
         @keyframes slide-up {
-          from {
-            opacity: 0;
-            transform: translateY(20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
+          from { opacity: 0; transform: translateY(20px); }
+          to { opacity: 1; transform: translateY(0); }
         }
-        
         @keyframes slide-in {
-          from {
-            opacity: 0;
-            transform: translateX(-10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateX(0);
-          }
+          from { opacity: 0; transform: scale(0.98); }
+          to { opacity: 1; transform: scale(1); }
         }
-        
         @keyframes fade-in {
-          from {
-            opacity: 0;
-          }
-          to {
-            opacity: 1;
-          }
+          from { opacity: 0; }
+          to { opacity: 1; }
         }
-        
-        @keyframes pulse {
-          0%, 100% {
-            opacity: 1;
-          }
-          50% {
-            opacity: 0.5;
-          }
-        }
-        
-        .animate-slide-up {
-          animation: slide-up 0.6s ease-out;
-        }
-        
-        .animate-slide-in {
-          animation: slide-in 0.4s ease-out;
-        }
-        
-        .animate-fade-in {
-          animation: fade-in 0.4s ease-out;
-        }
-        
-        .animate-pulse {
-          animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-        }
+        .animate-slide-up { animation: slide-up 0.6s cubic-bezier(0.16, 1, 0.3, 1); }
+        .animate-slide-in { animation: slide-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; }
+        .animate-fade-in { animation: fade-in 0.4s ease-out; }
       `}</style>
     </div>
   )

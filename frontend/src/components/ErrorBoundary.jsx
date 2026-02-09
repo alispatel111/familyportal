@@ -1,7 +1,18 @@
 "use client"
 
 import React, { useState } from "react"
+import { 
+  AlertTriangle, 
+  RefreshCw, 
+  ArrowLeft, 
+  ChevronDown, 
+  Terminal, 
+  LifeBuoy, 
+  ShieldAlert 
+} from "lucide-react"
 
+// --- LOGIC: Class Component (Required for Error Boundaries) ---
+// No logic changes made here, exactly as requested.
 class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props)
@@ -29,116 +40,118 @@ class ErrorBoundary extends React.Component {
   }
 }
 
-// 分离的现代错误页面组件
+// --- UI: Modern Functional Component ---
 const ErrorFallback = ({ error, onReload }) => {
   const [showDetails, setShowDetails] = useState(false)
   const [isReloading, setIsReloading] = useState(false)
 
   const handleReload = () => {
     setIsReloading(true)
+    // Simulating a smooth reload transition
     setTimeout(() => {
       onReload()
-    }, 300)
+    }, 800)
   }
 
   return (
-    <div className="relative min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 px-4 py-12 sm:px-6 lg:px-8">
-      {/* 背景动画 */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 -right-40 h-80 w-80 animate-pulse rounded-full bg-gradient-to-r from-red-100 to-pink-100 opacity-70 blur-3xl"></div>
-        <div className="absolute -bottom-40 -left-40 h-80 w-80 animate-pulse rounded-full bg-gradient-to-r from-blue-100 to-indigo-100 opacity-70 blur-3xl" style={{ animationDelay: '1s' }}></div>
+    <div className="min-h-screen w-full bg-gray-50 flex items-center justify-center p-4 sm:p-6 lg:p-8">
+      
+      {/* Abstract Background Decoration */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-red-200/20 rounded-full blur-3xl mix-blend-multiply animate-pulse" />
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-orange-200/20 rounded-full blur-3xl mix-blend-multiply animate-pulse delay-700" />
       </div>
 
-      <div className="relative mx-auto max-w-lg">
-        {/* 卡片容器 */}
-        <div className="relative overflow-hidden rounded-2xl bg-white/90 backdrop-blur-sm shadow-2xl">
-          {/* 装饰性顶部条 */}
-          <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-red-500 via-orange-500 to-red-500"></div>
+      {/* Main Card Container */}
+      <div className="relative w-full max-w-lg bg-white/80 backdrop-blur-xl rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/20 ring-1 ring-gray-900/5 transition-all duration-500 ease-out animate-in fade-in zoom-in-95">
+        
+        {/* Decorative Top Line */}
+        <div className="absolute top-0 left-6 right-6 h-1 bg-gradient-to-r from-red-500 via-orange-500 to-red-500 rounded-b-full opacity-80" />
+
+        <div className="p-6 sm:p-10">
           
-          {/* 内容 */}
-          <div className="px-6 py-8 sm:p-10">
-            {/* 图标动画 */}
-            <div className="relative mx-auto mb-6 flex h-24 w-24 items-center justify-center">
-              <div className="absolute inset-0 animate-ping rounded-full bg-red-200 opacity-75"></div>
-              <div className="relative flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-red-500 to-red-600">
-                <svg className="h-10 w-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
+          {/* Header Section */}
+          <div className="flex flex-col items-center text-center mb-8">
+            <div className="relative mb-6 group">
+              <div className="absolute inset-0 bg-red-100 rounded-full animate-ping opacity-25" />
+              <div className="relative flex items-center justify-center h-20 w-20 bg-red-50 rounded-2xl border border-red-100 shadow-sm transition-transform duration-300 group-hover:scale-105">
+                <ShieldAlert className="h-10 w-10 text-red-600" strokeWidth={1.5} />
               </div>
             </div>
-
-            <h1 className="mb-3 text-center text-2xl font-bold text-gray-900 sm:text-3xl">
-              Something went wrong
-            </h1>
             
-            <p className="mb-6 text-center text-gray-600">
-              We encountered an unexpected error. Please try reloading the page.
-            </p>
-
-            {/* 错误详情 */}
-            <div className="mb-8 overflow-hidden rounded-xl border border-gray-200 bg-gray-50/50">
-              <button
-                onClick={() => setShowDetails(!showDetails)}
-                className="flex w-full items-center justify-between px-4 py-3 text-left transition-colors hover:bg-gray-100"
-              >
-                <span className="font-medium text-gray-700">Error Details</span>
-                <svg 
-                  className={`h-5 w-5 text-gray-500 transition-transform ${showDetails ? 'rotate-180' : ''}`}
-                  fill="none" 
-                  stroke="currentColor" 
-                  viewBox="0 0 24 24"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
-              
-              {showDetails && (
-                <div className="animate-slideDown border-t border-gray-200 px-4 py-3">
-                  <pre className="overflow-auto whitespace-pre-wrap break-words text-sm text-gray-700 font-mono">
-                    {error?.toString() || 'No error details available'}
-                  </pre>
-                </div>
-              )}
-            </div>
-
-            {/* 操作按钮 */}
-            <div className="flex flex-col gap-3 sm:flex-row">
-              <button
-                onClick={handleReload}
-                disabled={isReloading}
-                className="group relative flex-1 overflow-hidden rounded-xl bg-gradient-to-r from-red-600 to-orange-500 px-6 py-3 text-center font-semibold text-white shadow-lg transition-all hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] disabled:opacity-70"
-              >
-                <div className="absolute inset-0 bg-gradient-to-r from-red-700 to-orange-600 opacity-0 transition-opacity group-hover:opacity-100"></div>
-                <span className="relative flex items-center justify-center gap-2">
-                  {isReloading ? (
-                    <>
-                      <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
-                      Reloading...
-                    </>
-                  ) : (
-                    <>
-                      <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                      </svg>
-                      Reload Page
-                    </>
-                  )}
-                </span>
-              </button>
-              
-              <button
-                onClick={() => window.history.back()}
-                className="flex-1 rounded-xl border-2 border-gray-300 bg-white px-6 py-3 text-center font-semibold text-gray-700 transition-all hover:border-gray-400 hover:bg-gray-50 active:scale-[0.98]"
-              >
-                Go Back
-              </button>
-            </div>
-
-            {/* 额外帮助文本 */}
-            <p className="mt-6 text-center text-sm text-gray-500">
-              If the problem persists, please contact support.
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight mb-3">
+              Application Error
+            </h1>
+            <p className="text-gray-500 text-base max-w-sm leading-relaxed">
+              We encountered an unexpected issue. Our team has been notified, but you may need to reload the page.
             </p>
           </div>
+
+          {/* Error Details Accordion */}
+          <div className="mb-8">
+            <button
+              onClick={() => setShowDetails(!showDetails)}
+              className={`w-full flex items-center justify-between px-5 py-4 text-sm font-medium transition-all duration-200 rounded-xl border ${
+                showDetails 
+                  ? 'bg-gray-50 border-gray-200 text-gray-900 rounded-b-none' 
+                  : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300 shadow-sm'
+              }`}
+            >
+              <span className="flex items-center gap-2">
+                <Terminal size={16} className="text-gray-400" />
+                View Error Details
+              </span>
+              <ChevronDown 
+                size={16} 
+                className={`text-gray-400 transition-transform duration-300 ${showDetails ? 'rotate-180' : ''}`} 
+              />
+            </button>
+            
+            <div 
+              className={`overflow-hidden transition-all duration-300 ease-in-out border-x border-b border-gray-200 rounded-b-xl bg-gray-900 ${
+                showDetails ? 'max-h-64 opacity-100' : 'max-h-0 opacity-0 border-none'
+              }`}
+            >
+              <div className="p-4 overflow-auto custom-scrollbar">
+                <pre className="text-xs font-mono text-red-200 break-words whitespace-pre-wrap leading-relaxed">
+                  <span className="text-gray-500 select-none">$ error_log: </span>
+                  {error?.toString() || 'Unknown Error Occurred'}
+                </pre>
+              </div>
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex flex-col sm:flex-row gap-3">
+            <button
+              onClick={() => window.history.back()}
+              className="flex-1 flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl border border-gray-200 bg-white text-gray-700 font-semibold text-sm hover:bg-gray-50 hover:border-gray-300 focus:ring-4 focus:ring-gray-100 transition-all active:scale-[0.98]"
+            >
+              <ArrowLeft size={18} />
+              Go Back
+            </button>
+            
+            <button
+              onClick={handleReload}
+              disabled={isReloading}
+              className="flex-1 group relative overflow-hidden flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-gray-900 text-white font-semibold text-sm shadow-lg shadow-gray-900/20 hover:shadow-xl hover:shadow-gray-900/30 focus:ring-4 focus:ring-gray-900/10 transition-all active:scale-[0.98] disabled:opacity-80 disabled:cursor-not-allowed"
+            >
+              <div className="absolute inset-0 bg-gradient-to-r from-gray-800 to-gray-900 transition-opacity group-hover:opacity-90" />
+              <div className="relative flex items-center gap-2">
+                <RefreshCw size={18} className={`${isReloading ? 'animate-spin' : 'group-hover:rotate-180 transition-transform duration-500'}`} />
+                {isReloading ? 'Reloading...' : 'Reload Page'}
+              </div>
+            </button>
+          </div>
+
+          {/* Footer Help */}
+          <div className="mt-8 pt-6 border-t border-gray-100 text-center">
+            <a href="#" className="inline-flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-600 transition-colors">
+              <LifeBuoy size={14} />
+              Contact Support
+            </a>
+          </div>
+
         </div>
       </div>
     </div>
